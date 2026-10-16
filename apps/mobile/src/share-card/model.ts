@@ -182,7 +182,11 @@ function stepLine(snapshots: { t: number; v: number }[], moves: Move[]): { point
   return { points, after };
 }
 
-/** Moves too close to read apart share one marker (the most valuable one's face, with a count). */
+/**
+ * Moves too close to read apart share one marker, measured from the group's first move (not chained from move to move,
+ * which would fold a whole busy hour into one coin): the marker sits at that first move, wearing the most valuable
+ * move's face, with a count.
+ */
 function groupMarkers(moves: Move[], after: number[], minGapMs: number): ShareMarker[] {
   const markers: (ShareMarker & { best: number })[] = [];
   moves.forEach((move, i) => {
@@ -192,8 +196,6 @@ function groupMarkers(moves: Move[], after: number[], minGapMs: number): ShareMa
     const worth = move.usd ?? 0;
     if (last && move.t - last.t < minGapMs) {
       last.count += 1;
-      last.t = move.t;
-      last.v = v;
       if (worth > last.best) Object.assign(last, { kind: move.kind, token: move.token, other: move.other, best: worth });
       return;
     }
