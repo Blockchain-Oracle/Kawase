@@ -97,6 +97,7 @@ import { useCandles } from "@/trade/use-candles";
 import { useLiveTrades } from "@/markets/live-trades";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { withdrawHref } from "@/withdraw/href";
+import { ShareCardChip } from "@/share-card/share-chip";
 
 /** "LIVE": the last ~30 minutes of trades as they land (Arc mainnet tokens); the rest are history from candles. */
 type PageRange = "LIVE" | ChartRange;
@@ -676,7 +677,13 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
 
       {mine.trades ? (
         <Panel style={styles.panel}>
-          <SectionLabel>{t("tokenPage.yourTrades", { count: mine.trades.trades })}</SectionLabel>
+          <View style={styles.tradesHead}>
+            <View style={styles.tradesLabel}>
+              <SectionLabel>{t("tokenPage.yourTrades", { count: mine.trades.trades })}</SectionLabel>
+            </View>
+            {/* The person's trades in this token as a card to share (FOMO's card, Kawase's slip). */}
+            <ShareCardChip target={{ period: "30d", token: { chainId: token.chainId, address: token.address } }} />
+          </View>
           <KeyValue
             label={t("tokenPage.avgCost")}
             value={mine.trades.avgCostUsd !== null ? price(mine.trades.avgCostUsd, fx, locale) : "—"}
@@ -1051,6 +1058,8 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
 }
 
 const styles = StyleSheet.create({
+  tradesHead: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  tradesLabel: { flex: 1, minWidth: 0 },
   page: { flex: 1 },
   hero: { gap: SPACE.xs },
   heroRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },

@@ -110,9 +110,10 @@ export type ChartGeometry = {
 /** Room above and below the line inside the plot, as a share of the range, so the markers' faces stay inside. */
 const Y_PAD = 0.2;
 
-export function chartGeometry(series: { t: number; v: number }[], markers: ShareMarker[], from: number, to: number): ChartGeometry {
+export function chartGeometry(series: { t: number; v: number }[], markers: ShareMarker[], from: number, to: number, level: number = series[0]!.v): ChartGeometry {
   const span = Math.max(1, to - from);
-  const values = series.map((p) => p.v);
+  // The level (the start, the average entry, the entry price) is always in view.
+  const values = [...series.map((p) => p.v), level];
   let lo = Math.min(...values);
   let hi = Math.max(...values);
   if (hi - lo < 1e-9) {
@@ -138,7 +139,7 @@ export function chartGeometry(series: { t: number; v: number }[], markers: Share
   };
   return {
     points: series.map((p) => ({ x: xOf(p.t), y: yOf(p.v) })),
-    levelY: yOf(series[0]!.v),
+    levelY: yOf(level),
     xOf,
     yOf,
     valueAt,

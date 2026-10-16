@@ -12,6 +12,7 @@ import { ChangeChip, RollingFigure, Skeleton, Sparkline, SIZE, SPACE, StaleTick,
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { money } from "@/portfolio/format";
+import { ShareCardChip } from "@/share-card/share-chip";
 
 const FIGURE_HEIGHT = TYPE.displayBalance.lineHeight ?? SIZE.avatarLg;
 const CENTS = 100;
@@ -64,6 +65,8 @@ export function BalanceHero({
         {pct !== null && pct !== undefined ? <ChangeChip change={pct / PERCENT} /> : null}
         {week ? <Sparkline points={week} /> : null}
         {failedAt ? <StaleTick asOf={failedAt} reason="refresh-failed" compact /> : null}
+        {/* Once the wallet has a story to tell (a line this week), it can be shared as a card. */}
+        {week ? <ShareCardChip target={{ period: "7d" }} /> : null}
       </View>
     </Pressable>
   );

@@ -21,7 +21,7 @@ import type { Fx } from "@/portfolio/format";
 
 import { fileStem, type CardHandle } from "./card-handle";
 import { chartGeometry, FACT_W, FRAME, HERO_FIGURE_MAX_W, L, pillTop, STUB_LINE_MAX_W, TICK_W } from "./layout";
-import type { MarkerKind, PeriodCardData } from "./model";
+import type { CardData, MarkerKind } from "./model";
 import { CARD_URL, toneOf, type CardWords } from "./words";
 
 const ASCENT = 0.98;
@@ -79,13 +79,13 @@ function glyphPath(kind: MarkerKind, s: number): string {
   }
 }
 
-export const ShareCardView = React.forwardRef<CardHandle, { card: PeriodCardData; words: CardWords; fx: Fx; seed: string; width: number }>(
+export const ShareCardView = React.forwardRef<CardHandle, { card: CardData; words: CardWords; fx: Fx; seed: string; width: number }>(
   function ShareCardView({ card, words, seed, width }, ref) {
     const { color } = useTheme();
     const reduced = useReducedMotion();
     const shot = React.useRef<View>(null);
     const k = width / FRAME.w;
-    const g = React.useMemo(() => chartGeometry(card.series, card.markers, card.from, card.to), [card]);
+    const g = React.useMemo(() => chartGeometry(card.series, card.markers, card.from, card.to, card.level), [card]);
     const tone = toneOf(card.change);
     const line = tone === "up" ? color.up : tone === "down" ? color.down : color.ink;
     const onLine = tone === "up" ? color.upForeground : tone === "down" ? color.downForeground : color.card;
@@ -197,6 +197,8 @@ export const ShareCardView = React.forwardRef<CardHandle, { card: PeriodCardData
                 <View style={{ padding: L.marker.ring, borderRadius: L.marker.r + L.marker.ring, backgroundColor: color.card }}>
                   {m.token ? (
                     <TokenMark token={m.token} size={L.marker.r * 2} />
+                  ) : card.kind !== "period" ? (
+                    <DefaultAvatar seed={seed} size={L.marker.r * 2} />
                   ) : (
                     <View style={{ width: L.marker.r * 2, height: L.marker.r * 2, borderRadius: L.marker.r, backgroundColor: color.raised2 }} />
                   )}

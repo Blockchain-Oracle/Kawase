@@ -10,4 +10,6 @@ export type CardHandle = {
   video?: ((onProgress: (share: number) => void, signal: AbortSignal) => Promise<CardFile>) | undefined;
 };
 
-export const fileStem = (period: string) => `kawase-${period}-${new Date().toISOString().slice(0, 10)}`;
+/** "2026-10-16" from an ISO time. */
+const DATE_CHARS = 10;
+export const fileStem = (period: string) => `kawase-${period}-${new Date().toISOString().slice(0, DATE_CHARS)}`;

@@ -9,8 +9,8 @@ import type { Fx } from "@/portfolio/format";
 
 import type { CardImages } from "./art.web";
 import { tokenKey } from "./art.web";
-import { FACT_W, FILM, filmAt, HERO_FIGURE_MAX_W, L, overshoot, partialLine, pillTop, STUB_LINE_MAX_W, TICK_W, type ChartGeometry } from "./layout";
-import type { MarkerKind, PeriodCardData } from "./model";
+import { easeOut, FACT_W, FILM, filmAt, HERO_FIGURE_MAX_W, L, overshoot, partialLine, pillTop, STUB_LINE_MAX_W, TICK_W, type ChartGeometry } from "./layout";
+import type { CardData, MarkerKind } from "./model";
 import { figureAt, pillAt, toneOf, type CardWords } from "./words";
 
 export type CardColors = {
@@ -33,7 +33,7 @@ export type CardColors = {
 };
 
 export type CardScene = {
-  card: PeriodCardData;
+  card: CardData;
   words: CardWords;
   geometry: ChartGeometry;
   colors: CardColors;
@@ -222,7 +222,8 @@ function drawHeader(c: Ctx, s: CardScene) {
 function drawMarkerFace(c: Ctx, s: CardScene, m: ChartGeometry["markers"][number], scale: number) {
   const r = L.marker.r * scale;
   if (r <= 0.5) return;
-  const front = m.token ? s.images.tokens.get(tokenKey(m.token)) : null;
+  // On a token's or a trade's card the moments are the person's own (FOMO's avatar dot): their avatar is the face.
+  const front = m.token ? s.images.tokens.get(tokenKey(m.token)) : s.card.kind !== "period" ? s.images.avatar : null;
   const back = m.kind === "swap" && m.other ? s.images.tokens.get(tokenKey(m.other)) : null;
   if (back && front) {
     // A swap wears both coins, the one that went out behind and up, the one that came in over it (the feed's face).
@@ -271,7 +272,7 @@ function drawChart(c: Ctx, s: CardScene, ms: number) {
   rule(c, p.x, g.levelY, p.x + p.w, g.levelY, s.colors.muted, L.level.width, [L.level.dash, L.level.dash], L.level.alpha);
   const { points, head, t } = partialLine(g, card.from, card.to, film.draw);
   const value = g.valueAt(t);
-  const tone = toneColors(s, value - card.start);
+  const tone = toneColors(s, card.kind === "period" ? value - card.start : card.change);
   if (points.length > 1 && film.draw > 0) {
     const first = points[0]!;
     c.save();
@@ -310,7 +311,7 @@ function drawChart(c: Ctx, s: CardScene, ms: number) {
   }
   if (film.draw > 0) {
     const top = pillTop(head.y);
-    const pill = fit(c, pillAt(value, s.fx, s.locale), WEIGHT.bold, L.pill.size, L.pill.min, L.pill.maxW - L.pill.padX * 2);
+    const pill = fit(c, pillAt(value, card.unit, s.fx, s.locale), WEIGHT.bold, L.pill.size, L.pill.min, L.pill.maxW - L.pill.padX * 2);
     const pillW = widthOf(c, pill.text, pill.css) + L.pill.padX * 2;
     const pillX = L.pill.right - pillW;
     rule(c, head.x + L.head.r, head.y, pillX - 6, top + L.pill.h / 2, tone.line, L.level.width, [L.level.dash / 2, L.level.dash / 2], 0.55);
@@ -340,7 +341,8 @@ function drawHero(c: Ctx, s: CardScene, ms: number) {
   text(c, lf.text, L.left, hero.label.base, lf.css, s.colors.muted, "left", 1, hero.label.track);
   // The figure counts with the line, then lands exactly on the card's own figure.
   const t = card.from + (card.to - card.from) * film.draw;
-  const moving = film.draw >= 1 ? card.change : g.valueAt(t) - card.start;
+  // A balance counts with its line; a trade's result rises to its figure as the price line draws.
+  const moving = film.draw >= 1 ? card.change : card.kind === "period" ? g.valueAt(t) - card.start : card.change * easeOut(film.draw);
   const shown = film.draw >= 1 ? words.figure : figureAt(moving, s.fx, s.locale);
   const tone = toneColors(s, moving);
   const ff = fit(c, shown, WEIGHT.black, hero.figure.size, hero.figure.min, HERO_FIGURE_MAX_W, true);

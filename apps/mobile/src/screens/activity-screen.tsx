@@ -34,6 +34,7 @@ import { StatusScrim } from "@/components/shell/StatusScrim";
 import { TabHeader } from "@/components/tab-header";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { ExportSheet } from "@/history/export-sheet";
+import { ShareCardChip } from "@/share-card/share-chip";
 import { ReportCard } from "@/history/report-card";
 import { FeedDetailSheet } from "@/home/feed-detail-sheet";
 import { useFeedCopy } from "@/home/feed-copy";
@@ -145,6 +146,7 @@ export function ActivityScreen() {
             <Text accessibilityRole="header" style={[TYPE.pageTitle, styles.grow, { color: color.ink }]}>
               {t("activity.title")}
             </Text>
+            {account ? <ShareCardChip target={{ period: "30d" }} /> : null}
             {account ? (
               <Button
                 size="sm"

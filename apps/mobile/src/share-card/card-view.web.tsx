@@ -14,8 +14,8 @@ import type { Fx } from "@/portfolio/format";
 import { CardArt, type CardImages } from "./art.web";
 import { fileStem, type CardHandle } from "./card-handle";
 import { drawCard, loadCardFonts, type CardColors, type CardScene } from "./draw.web";
-import { chartGeometry, FILM, FINAL_MS, FRAME } from "./layout";
-import type { PeriodCardData, ShareToken } from "./model";
+import { chartGeometry, FILM, FINAL_MS, FRAME, L } from "./layout";
+import type { CardData, ShareToken } from "./model";
 import { CARD_URL, type CardWords } from "./words";
 
 const VIDEO_BITRATE = 6_000_000;
@@ -50,7 +50,7 @@ function useCardColors(): CardColors {
   );
 }
 
-function tokensOf(card: PeriodCardData): ShareToken[] {
+function tokensOf(card: CardData): ShareToken[] {
   const seen = new Map<string, ShareToken>();
   for (const m of card.markers) for (const token of [m.token, m.other]) if (token) seen.set(`${token.chainId}:${token.address.toLowerCase()}`, token);
   return [...seen.values()];
@@ -88,7 +88,7 @@ async function encodeVideo(scene: CardScene, onProgress: (share: number) => void
 
 export const ShareCardView = React.forwardRef<
   CardHandle,
-  { card: PeriodCardData; words: CardWords; fx: Fx; seed: string; width: number }
+  { card: CardData; words: CardWords; fx: Fx; seed: string; width: number }
 >(function ShareCardView({ card, words, fx, seed, width }, ref) {
   const { locale, rtl } = useLocale();
   const colors = useCardColors();
@@ -99,7 +99,7 @@ export const ShareCardView = React.forwardRef<
   const [run, setRun] = React.useState(0);
   const tokens = React.useMemo(() => tokensOf(card), [card]);
   const scene = React.useMemo<CardScene | null>(
-    () => (images && fontsReady ? { card, words, geometry: chartGeometry(card.series, card.markers, card.from, card.to), colors, images, fx, locale, rtl } : null),
+    () => (images && fontsReady ? { card, words, geometry: chartGeometry(card.series, card.markers, card.from, card.to, card.level), colors, images, fx, locale, rtl } : null),
     [card, words, colors, images, fx, locale, rtl, fontsReady],
   );
 
@@ -180,7 +180,7 @@ export const ShareCardView = React.forwardRef<
   const height = (width * FRAME.h) / FRAME.w;
   return (
     <View style={{ width, height }} accessible accessibilityRole="image" accessibilityLabel={words.alt}>
-      <canvas ref={canvas} width={FRAME.w} height={FRAME.h} style={{ width, height, display: "block", borderRadius: (width / FRAME.w) * 56 }} />
+      <canvas ref={canvas} width={FRAME.w} height={FRAME.h} style={{ width, height, display: "block", borderRadius: (width / FRAME.w) * L.paper.r }} />
       <CardArt seed={seed} tokens={tokens} onReady={setImages} />
     </View>
   );

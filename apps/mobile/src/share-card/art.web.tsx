@@ -167,7 +167,6 @@ export function CardArt({ seed, tokens, onReady }: { seed: string; tokens: reado
       clearTimeout(timer);
     };
     // The signature names everything drawn; the refs are filled by the render below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature]);
 
   const markSize = L.marker.r * 2;

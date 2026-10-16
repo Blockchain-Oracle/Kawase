@@ -107,6 +107,7 @@ import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceRes
 import type { SafetyToolOutput } from "@kawase/api-client";
 import type { ChartOutput, DecisionView, HistorySearchOutput, MemoryToolOutput, SettingDiff, StatusView, SuggestionsView } from "@kawase/api-client";
 import { MemoryCard } from "./memory-card";
+import { ShareCardChatCard } from "@/share-card/chat-card";
 import { ChartCard, DecisionCard, ForYouChatCard, HistorySearchCard, KnowledgeCard, SettingDiffCard, StatusCard } from "./insight-cards";
 import type { PayCodeView, RaceRoutesOutput, RemindPaymentOutput } from "@kawase/api-client";
 import { PayCodeCard, SplitBillCard } from "./pay-code-card";
@@ -664,6 +665,7 @@ const LOADING_LABELS: Record<string, string> = {
   get_for_you: "forYou.loading",
   arc_knowledge: "insight.lookingUp",
   show_chart: "insight.loadingChart",
+  show_share_card: "shareCard.loading",
   explain_choice: "insight.loadingDecision",
   propose_setting_change: "insight.loadingSetting",
   get_status: "insight.loadingStatus",
@@ -742,6 +744,7 @@ const CARD_TOOLS: ReadonlySet<string> = new Set([
   "set_risk_mode",
   "show_chart",
   "show_receive",
+  "show_share_card",
   "sign_out_device",
   "simulate_automation",
   "split_bill",
@@ -945,6 +948,8 @@ function ToolResult({
       return <KnowledgeCard output={part.output as { passages: { title: string; source: string }[] }} />;
     case "show_chart":
       return <ChartCard output={part.output as ChartOutput} />;
+    case "show_share_card":
+      return <ShareCardChatCard output={part.output as Parameters<typeof ShareCardChatCard>[0]["output"]} />;
     case "explain_choice":
       return <DecisionCard output={part.output as DecisionView} />;
     case "propose_setting_change":

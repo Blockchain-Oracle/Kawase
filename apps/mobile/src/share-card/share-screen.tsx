@@ -13,8 +13,8 @@ import { useWide } from "@kawase/ui-native/lib/wide";
 import { Button } from "@/components/kit/Button";
 import { Icon } from "@/components/kit/icons";
 import { Segmented } from "@/components/kit/Segmented";
-import { EmptyState, Skeleton } from "@/components/kit/states";
-import { RADIUS, SPACE, TYPE, useTheme } from "@/components/kit/theme";
+import { EmptyState } from "@/components/kit/states";
+import { SPACE, TYPE, useTheme } from "@/components/kit/theme";
 import { fire } from "@/feedback/fire";
 import { useFund } from "@/fund/fund-provider";
 import { useT } from "@/i18n";
@@ -27,46 +27,21 @@ import { PageHeader, PhoneScroll } from "@/trade/page-frame";
 
 import type { CardHandle } from "./card-handle";
 import { ShareCardView } from "./card-view";
-import { FRAME, L } from "./layout";
 import { SHARE_PERIODS, type SharePeriod } from "./model";
 import { saveCardFile, shareCardFile } from "./share-actions";
 import { useShareCard } from "./use-share-card";
+import { CardSkeleton } from "./card-skeleton";
 import { cardWords } from "./words";
 
 const CARD_MAX = 480;
 const COLUMN_MAX = 560;
 const PERCENT = 100;
+const GUTTERS = 2;
+const ENTER_MS = 240;
 
 const isPeriod = (value: unknown): value is SharePeriod => typeof value === "string" && (SHARE_PERIODS as readonly string[]).includes(value);
 
 type VideoState = { phase: "idle" } | { phase: "making"; share: number } | { phase: "done" } | { phase: "unavailable" } | { phase: "failed" };
-
-/** The card's own shape while the wallet is read: the slip, a line where the chart goes, the figure, three facts. */
-function CardSkeleton({ width, label }: { width: number; label: string }) {
-  const { color } = useTheme();
-  const k = width / FRAME.w;
-  return (
-    <View accessibilityRole="progressbar" accessibilityLabel={label} style={{ width, height: FRAME.h * k, borderRadius: L.paper.r * k, backgroundColor: color.ground, padding: L.paper.x * k }}>
-      <View style={{ flex: 1, borderRadius: L.paper.r * k, backgroundColor: color.card, padding: (L.left - L.paper.x) * k, gap: SPACE.lg }}>
-        <View style={styles.row}>
-          <Skeleton width={L.header.avatar.size * k} height={L.header.avatar.size * k} radius={L.header.avatar.size} />
-          <View style={[styles.grow, { gap: SPACE.xs }]}>
-            <Skeleton width="55%" />
-            <Skeleton width="35%" />
-          </View>
-        </View>
-        <Skeleton height={L.plot.h * k} radius={RADIUS.md} />
-        <Skeleton width="30%" />
-        <Skeleton width="62%" height={L.hero.figure.size * k * 0.8} radius={RADIUS.sm} />
-        <View style={styles.row}>
-          <Skeleton width="28%" />
-          <Skeleton width="28%" />
-          <Skeleton width="28%" />
-        </View>
-      </View>
-    </View>
-  );
-}
 
 export function ShareCardScreen() {
   const { t } = useT();
@@ -74,9 +49,14 @@ export function ShareCardScreen() {
   const wide = useWide();
   const { color } = useTheme();
   const { locale } = useLocale();
-  const params = useLocalSearchParams<{ period?: string }>();
+  const params = useLocalSearchParams<{ period?: string; token?: string; position?: string }>();
   const [period, setPeriod] = React.useState<SharePeriod>(isPeriod(params.period) ? params.period : "30d");
-  const state = useShareCard(period);
+  // "5042002:0x89b5…" from a token page; a position's id from its page.
+  const token = React.useMemo(() => {
+    const [chainId, address] = (params.token ?? "").split(":");
+    return chainId && address && /^0x[0-9a-fA-F]{40}$/.test(address) ? { chainId: Number(chainId), address } : undefined;
+  }, [params.token]);
+  const state = useShareCard({ period, token, position: params.position });
   const { user } = useSession();
   const { portfolio } = usePortfolio();
   const fund = useFund();
@@ -95,7 +75,7 @@ export function ShareCardScreen() {
   );
   // The column's measured width, or until it is measured the window's (so the card never waits on a layout pass).
   const window = useWindowDimensions();
-  const cardWidth = Math.min(CARD_MAX, width || Math.min(COLUMN_MAX, window.width - SPACE.inset * 2));
+  const cardWidth = Math.min(CARD_MAX, width || Math.min(COLUMN_MAX, window.width - SPACE.inset * GUTTERS));
   React.useEffect(() => {
     abort.current?.abort();
     setVideo({ phase: "idle" });
@@ -153,7 +133,7 @@ export function ShareCardScreen() {
   else if (state.status === "loading" || !words || cardWidth === 0) body = cardWidth > 0 ? <CardSkeleton width={cardWidth} label={t("shareCard.loading")} /> : null;
   else
     body = (
-      <Animated.View entering={FadeIn.duration(240)} style={styles.cardBlock}>
+      <Animated.View entering={FadeIn.duration(ENTER_MS)} style={styles.cardBlock}>
         <ShareCardView ref={card} card={state.card} words={words} fx={fx} seed={user?.id ?? "guest"} width={cardWidth} />
         <View style={[styles.actions, { width: cardWidth }]}>
           <Button label={t("shareCard.shareImage")} leading={<Icon icon={Share2} size={18} />} loading={busy} onPress={() => void shareImage()} />
@@ -206,7 +186,7 @@ export function ShareCardScreen() {
       />
       <PhoneScroll>
         <View style={[styles.column, wide ? styles.columnWide : null]} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
-          {state.status === "guest" || cardWidth === 0 ? null : (
+          {state.status === "guest" || cardWidth === 0 || params.position ? null : (
             <View style={{ width: cardWidth }}>
               <Segmented options={periods} value={period} onChange={setPeriod} label={t("shareCard.title")} />
             </View>

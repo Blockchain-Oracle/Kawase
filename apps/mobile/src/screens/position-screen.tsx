@@ -17,6 +17,7 @@ import { PositionActions, PositionChart, PositionState, PositionSummary, usePosi
 import { useMarginPositions } from "@/margin/use-margin";
 import { SideTag } from "@/trade/bits";
 import { Columns, PageHeader, PhoneScroll } from "@/trade/page-frame";
+import { ShareCardChip } from "@/share-card/share-chip";
 
 const MARK = 40;
 
@@ -44,6 +45,7 @@ export function PositionScreen({ id }: { id: string }) {
             <>
               <SideTag side={position.side} />
               <Mark entity={marketEntity(position.asset)} size={MARK} />
+              <ShareCardChip target={{ position: position.id }} />
             </>
           ) : null
         }

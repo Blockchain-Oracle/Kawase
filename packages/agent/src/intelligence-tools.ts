@@ -117,6 +117,12 @@ export function intelligenceTools(context: AgentContext, trust: TurnTrust) {
             : output,
       }),
     }),
+    show_share_card: tool({
+      description:
+        "Draw the person's share card: a picture (and on the web a short film) of their money on Kawase over 7 days, 30 days or all time — the balance line with each move's coin, the net change, what came in, went out and was swapped — with Share image in the card. Use it for \"share my month\", \"make a card of my week\", \"something to post about my Kawase\". 30d if they did not say. The card reads their own wallet; say nothing about the numbers beyond what it shows.",
+      inputSchema: z.object({ period: z.enum(["7d", "30d", "all"]).optional() }),
+      execute: async ({ period }) => ({ status: "ready" as const, period: period ?? "30d" }),
+    }),
     explain_choice: tool({
       description:
         "Show why Kawase picked the route, venue or vault on the latest bridge, swap or earn card in this conversation: every option it asked, what each would deliver (or yield), fees, time, and why the others lost or could not quote. Use it for \"why this route?\", \"why not Across?\", \"is there a better rate?\", \"why that vault?\". It reads the card's own quotes; it does not re-quote.",

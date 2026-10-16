@@ -31,7 +31,8 @@ export async function shareCardFile(file: CardFile, title: string, text: string)
   return "saved";
 }
 
-export async function saveCardFile(file: CardFile, _title?: string, _text?: string): Promise<"saved"> {
+/** Saving is a download in a browser (the title and words are for the phone's share sheet). */
+export async function saveCardFile(...[file]: [file: CardFile, title?: string, text?: string]): Promise<"saved"> {
   if (file.kind === "blob") download(file.blob, file.name);
   return "saved";
 }

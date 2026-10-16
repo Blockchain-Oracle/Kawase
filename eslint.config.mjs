@@ -21,7 +21,18 @@ export default tseslint.config(
   },
   {
     // Constant modules are where numbers are allowed to live; the art objects' geometry is their content.
-    files: ["packages/config/**", "packages/networks/src/addresses.ts", "packages/networks/src/contexts.ts", "**/*.config.*", "packages/ui-native/src/components/art/**"],
+    // The share card's drawing (its geometry module and the canvas and native painters) is an art object the same way.
+    files: [
+      "packages/config/**",
+      "packages/networks/src/addresses.ts",
+      "packages/networks/src/contexts.ts",
+      "**/*.config.*",
+      "packages/ui-native/src/components/art/**",
+      "apps/mobile/src/share-card/layout.ts",
+      "apps/mobile/src/share-card/draw.web.ts",
+      "apps/mobile/src/share-card/card-view.tsx",
+      "apps/mobile/src/share-card/art.web.tsx",
+    ],
     rules: { "@typescript-eslint/no-magic-numbers": "off" },
   },
   {

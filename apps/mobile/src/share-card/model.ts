@@ -4,7 +4,7 @@
 // moves (GET /feed, the rows Activity shows). Nothing is invented: where two snapshots hold moves between them, the
 // line steps at each move by its own value and the rest of the difference (prices moving) is spread evenly, so the line
 // still passes through every real snapshot. A move whose value Kawase cannot price shows as a marker and a count only.
-import type { AgentFeedItem, PortfolioView } from "@kawase/api-client";
+import type { AgentFeedItem, Candle, MarginPositionView, PortfolioView, TokenTradesView } from "@kawase/api-client";
 
 import { ARC_CHAIN_IDS } from "@/safety/use-safety";
 
@@ -25,12 +25,24 @@ export type ShareMarker = {
   count: number;
 };
 
-export type FactKey = "received" | "sent" | "swapped" | "bridged" | "saved" | "traded";
-/** A fact under the figure: a dollar total, or a count when none of its moves could be priced. */
-export type ShareFact = { key: FactKey; usd: number | null; count: number };
+export type FactKey = "received" | "sent" | "swapped" | "bridged" | "saved" | "traded" | "invested" | "avgEntry" | "avgExit" | "priceNow" | "entry" | "exit" | "putIn";
+/** A fact under the figure: a dollar total (or a price), or a count when none of its moves could be priced. */
+export type ShareFact = { key: FactKey; usd: number | null; count: number; price?: boolean };
 
-export type PeriodCardData = {
-  kind: "period";
+/** What a token or position card is about (its name on the card, the side and leverage of a trade). */
+export type CardSubject = { token: ShareToken | null; symbol: string; market?: string; side?: "long" | "short"; leverage?: number };
+
+/**
+ * One card: the person's money over a period (`period`), their trades in one token (`token`, the line is its price),
+ * or one long/short (`position`, the line is the market's price). The same frame draws all three.
+ */
+export type CardData = {
+  kind: "period" | "token" | "position";
+  /** The line's unit: dollars of balance, or a price. */
+  unit: "usd" | "price";
+  /** The dashed level: where the balance started, the average entry, or the entry price. */
+  level: number;
+  subject: CardSubject | null;
   period: SharePeriod;
   network: "mainnet" | "testnet";
   /** The span the line covers (ms): the period, or less when Kawase's snapshots start later. */
@@ -49,8 +61,10 @@ export type PeriodCardData = {
   moves: number;
 };
 
+export type PeriodCardData = CardData;
+
 /** Why there is no card: nothing moved yet, or Kawase has a single reading of the balance. */
-export type PeriodCardResult = { status: "ready"; card: PeriodCardData } | { status: "empty" };
+export type PeriodCardResult = { status: "ready"; card: CardData } | { status: "empty" };
 
 const DAY_MS = 86_400_000;
 const PERIOD_DAYS: Record<Exclude<SharePeriod, "all">, number> = { "7d": 7, "30d": 30 };
@@ -62,6 +76,9 @@ const TEN = 10;
 const FACT_ORDER: readonly FactKey[] = ["received", "sent", "swapped", "bridged", "saved", "traded"];
 const FACT_FILL: readonly FactKey[] = ["received", "sent", "swapped"];
 const FACT_COUNT = 3;
+/** A line needs two points. */
+const MIN_POINTS = 2;
+const HALF_HOUR_MINUTES = 30;
 
 const KIND_OF: Partial<Record<AgentFeedItem["kind"], MarkerKind>> = {
   receive: "in",
@@ -182,7 +199,7 @@ function groupMarkers(moves: Move[], after: number[], minGapMs: number): ShareMa
     }
     markers.push({ t: move.t, v, kind: move.kind, token: move.token, other: move.other, count: 1, best: worth });
   });
-  return markers.map(({ best: _best, ...marker }) => marker);
+  return markers.map((marker) => ({ t: marker.t, v: marker.v, kind: marker.kind, token: marker.token, other: marker.other, count: marker.count }));
 }
 
 function factsOf(moves: Move[]): readonly [ShareFact, ShareFact, ShareFact] {
@@ -225,7 +242,7 @@ export function buildPeriodCard(input: {
   if (!last || last.t < now) snapshots.push({ t: now, v: portfolio.totalUsd });
   const from = snapshots[0]!.t;
   const moves = allMoves.filter((move) => move.t >= from && move.t <= now);
-  if (snapshots.length < 2 || (moves.length === 0 && snapshots.every((point) => point.v === snapshots[0]!.v))) return { status: "empty" };
+  if (snapshots.length < MIN_POINTS || (moves.length === 0 && snapshots.every((point) => point.v === snapshots[0]!.v))) return { status: "empty" };
   const { points, after } = stepLine(snapshots, moves);
   const start = points[0]!.v;
   const end = points.at(-1)!.v;
@@ -234,6 +251,9 @@ export function buildPeriodCard(input: {
     status: "ready",
     card: {
       kind: "period",
+      unit: "usd",
+      level: start,
+      subject: null,
       period,
       network: portfolio.network,
       from,
@@ -246,6 +266,132 @@ export function buildPeriodCard(input: {
       markers: groupMarkers(moves, after, (now - from) * input.markerGap),
       facts: factsOf(moves),
       moves: moves.length,
+    },
+  };
+}
+
+// ── A token's card: the person's trades in it over its price (FOMO's card) ────────────────────────────────────────
+const SECONDS_BEFORE = 1e12;
+const MS_PER_SECOND = 1000;
+const MINUTE_MS = 60_000;
+/** Before a position's open, this share of its life (at least half an hour) of price, so the entry is a moment on the line. */
+const LEAD_SHARE = 0.12;
+const LEAD_MIN_MS = HALF_HOUR_MINUTES * MINUTE_MS;
+const PRICE_DECIMALS = 1e8;
+const USDC_UNITS = 1e6;
+
+const candleSeries = (candles: readonly Candle[], from: number, to: number) =>
+  candles
+    .map((candle) => ({ t: candle.t < SECONDS_BEFORE ? candle.t * MS_PER_SECOND : candle.t, v: candle.c }))
+    .filter((point) => Number.isFinite(point.v) && point.t >= from && point.t <= to)
+    .sort((a, b) => a.t - b.t);
+
+/** The price line at a moment (the candle at or before it). */
+const priceAt = (series: { t: number; v: number }[], t: number) => series.filter((point) => point.t <= t).at(-1)?.v ?? series[0]?.v ?? 0;
+
+export function buildTokenCard(input: {
+  period: SharePeriod;
+  network: "mainnet" | "testnet";
+  token: ShareToken & { decimals: number };
+  trades: TokenTradesView;
+  candles: readonly Candle[];
+  items: readonly AgentFeedItem[];
+  now: number;
+  markerGap: number;
+}): PeriodCardResult {
+  const { token, trades, now } = input;
+  const address = token.address.toLowerCase();
+  const from = input.period === "all" ? 0 : now - PERIOD_DAYS[input.period] * DAY_MS;
+  const series = candleSeries(input.candles, from, now);
+  if (series.length < MIN_POINTS || trades.trades === 0) return { status: "empty" };
+  const start = series[0]!.t;
+  // Each swap into or out of the token: a buy (it came in) or a sell (it went out), at the price of that moment.
+  const moves = input.items
+    .filter((item) => item.group === "done" && item.outcome === "confirmed" && item.kind === "swap")
+    .flatMap((item) => {
+      const t = Date.parse(item.at);
+      const bought = item.token?.address.toLowerCase() === address;
+      const sold = item.other?.token.address.toLowerCase() === address;
+      if (!Number.isFinite(t) || t < start || (!bought && !sold)) return [];
+      return [{ t, kind: (bought ? "in" : "out") as MarkerKind, usd: null, delta: 0, token: null, other: null }];
+    })
+    .sort((a, b) => a.t - b.t);
+  const markers = groupMarkers(
+    moves,
+    moves.map((move) => priceAt(series, move.t)),
+    (now - start) * input.markerGap,
+  );
+  const held = Number(trades.held) / TEN ** token.decimals;
+  const soldUnits = Number(trades.sold) / TEN ** token.decimals;
+  const change = trades.realizedUsd + (trades.unrealizedUsd ?? 0);
+  const avgExit = soldUnits > 0 && trades.avgCostUsd !== null ? (trades.realizedUsd + trades.avgCostUsd * soldUnits) / soldUnits : null;
+  const last = series.at(-1)!.v;
+  return {
+    status: "ready",
+    card: {
+      kind: "token",
+      unit: "price",
+      level: trades.avgCostUsd ?? series[0]!.v,
+      subject: { token, symbol: token.symbol },
+      period: input.period,
+      network: input.network,
+      from: start,
+      to: now,
+      series,
+      start: series[0]!.v,
+      end: last,
+      change,
+      changePct: trades.costBasisUsd > 0 ? (change / trades.costBasisUsd) * PERCENT : null,
+      markers,
+      facts: [
+        { key: "invested", usd: trades.costBasisUsd, count: trades.trades },
+        { key: "avgEntry", usd: trades.avgCostUsd, count: 0, price: true },
+        held > 0 ? { key: "priceNow", usd: last, count: 0, price: true } : { key: "avgExit", usd: avgExit, count: 0, price: true },
+      ],
+      moves: moves.length,
+    },
+  };
+}
+
+// ── A long or a short: the market's price from the open to the close (or now) ──────────────────────────────────────
+export function buildPositionCard(input: { position: MarginPositionView; token: ShareToken | null; candles: readonly Candle[]; now: number }): PeriodCardResult {
+  const { position } = input;
+  const opened = Date.parse(position.openedAt);
+  const closed = position.closedAt ? Date.parse(position.closedAt) : input.now;
+  // A little of the price before the open, so the entry is a moment on the line rather than its first point.
+  const lead = Math.max((closed - opened) * LEAD_SHARE, LEAD_MIN_MS);
+  const series = candleSeries(input.candles, opened - lead, closed);
+  if (series.length < MIN_POINTS || !Number.isFinite(opened)) return { status: "empty" };
+  const entry = Number(position.entryPrice) / PRICE_DECIMALS;
+  const exit = Number(position.markPrice) / PRICE_DECIMALS;
+  const ended = position.status !== "open";
+  const markers: ShareMarker[] = [
+    { t: opened, v: entry, kind: "trade", token: null, other: null, count: 1 },
+    ...(ended ? [{ t: closed, v: exit, kind: "out" as MarkerKind, token: null, other: null, count: 1 }] : []),
+  ];
+  return {
+    status: "ready",
+    card: {
+      kind: "position",
+      unit: "price",
+      level: entry,
+      subject: { token: input.token, symbol: position.asset, market: position.market, side: position.side === "short" ? "short" : "long", leverage: position.leverage },
+      period: "all",
+      network: position.network,
+      from: series[0]!.t,
+      to: closed,
+      series,
+      start: series[0]!.v,
+      end: series.at(-1)!.v,
+      change: position.pnlUsd,
+      changePct: position.pnlPercent,
+      markers,
+      facts: [
+        { key: "putIn", usd: Number(position.margin) / USDC_UNITS, count: 0 },
+        { key: "entry", usd: entry, count: 0, price: true },
+        { key: ended ? "exit" : "priceNow", usd: exit, count: 0, price: true },
+      ],
+      moves: markers.length,
     },
   };
 }
