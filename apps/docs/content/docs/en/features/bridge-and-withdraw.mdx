@@ -66,7 +66,8 @@ amount and recipient.
 
 If you hold USDC at the same address on another network, **Add money → From another chain** finds it (the largest
 balance first) and brings it to Arc with **Relay's permit**: one signature and **no gas needed on that network**. The
-permit is checked (your address, the amount, Relay's contract and that network's USDC) before you sign. Mainnet only.
+permit is checked (your address, the amount, Relay's contract and that network's USDC) and the move is **simulated on
+the chain** before you sign. Mainnet only.
 
 ## Withdraw
 

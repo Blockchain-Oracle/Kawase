@@ -10,7 +10,7 @@ description: Markets, a page for every token on Arc with its safety checks, and 
 <Flow>
   <FlowStep icon="coins" title="Pick a pair">Pay with any token you hold, get any token.</FlowStep>
   <FlowStep icon="route" title="The race" tone="accent">Six venues quote at once; the most delivered wins.</FlowStep>
-  <FlowStep icon="hand" title="Slide">The least you get, rehearsed on Arc. One slide.</FlowStep>
+  <FlowStep icon="hand" title="Slide">The least you get, simulated first. One slide.</FlowStep>
   <FlowStep icon="receipt" title="Receipt" tone="ink">Approval and swap in one transaction.</FlowStep>
 </Flow>
 
@@ -37,9 +37,9 @@ what it would deliver, or why it couldn't quote. Guests see the race too: you on
   </WalkStep>
   <WalkStep title="Review" src="swap/review">
     The review shows what you get **at least** (the on-chain minimum), the price impact, and every route. Tap another
-    route to pick it yourself. Before the slide unlocks, Kawase **rehearses the swap on Arc** from your address: what
-    leaves and arrives by the chain's own logs, the contracts it touches and the block. A swap that would revert stops
-    there, in Arc's own words.
+    route to pick it yourself. Before the slide unlocks, Kawase **simulates the swap on the chain** from your address:
+    what leaves and arrives by the chain's own logs, the contracts it touches and the block. A swap that would revert
+    stops there, in the chain's own words, and every fresh price is simulated again before you can slide.
 
     <Pin at="68 15">What you get, and the least you'll get</Pin>
 
@@ -47,7 +47,7 @@ what it would deliver, or why it couldn't quote. Guests see the race too: you on
 
     <Pin box="5 44.2 90 5.4">The venues that didn't quote</Pin>
 
-    <Pin box="5 66.8 90 14">Rehearsed on Arc: what leaves and arrives, what it touches</Pin>
+    <Pin box="5 66.8 90 14">Simulated: what leaves and arrives, what it touches</Pin>
 
     <Pin box="5 84 90 6.8">Slide to swap</Pin>
   </WalkStep>

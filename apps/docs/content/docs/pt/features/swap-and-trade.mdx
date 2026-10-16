@@ -1,7 +1,7 @@
 ---
 title: "Negociar qualquer token"
 description: "Mercados, uma página para cada token da Arc com suas verificações de segurança, e comprar, vender ou trocar qualquer par pelo melhor de seis plataformas em disputa, confirmado com um só deslize."
-sourceHash: 38cd4364250c2fb4
+sourceHash: 0e5da161bf23bd18
 ---
 
 <Status ids="swap" />
@@ -11,7 +11,7 @@ sourceHash: 38cd4364250c2fb4
 <Flow>
   <FlowStep icon="coins" title="Escolha um par">Pague com qualquer token que você tem e receba qualquer token.</FlowStep>
   <FlowStep icon="route" title="A disputa" tone="accent">Seis plataformas cotam ao mesmo tempo; vence a que entrega mais.</FlowStep>
-  <FlowStep icon="hand" title="Deslize">O mínimo que você recebe, ensaiado na Arc. Um deslize.</FlowStep>
+  <FlowStep icon="hand" title="Deslize">O mínimo que você recebe, simulado antes. Um deslize.</FlowStep>
   <FlowStep icon="receipt" title="Recibo" tone="ink">Aprovação e troca em uma única transação.</FlowStep>
 </Flow>
 
@@ -38,7 +38,7 @@ que entregariam, ou por que não cotaram. Convidados também veem a disputa: voc
   </WalkStep>
   <WalkStep title="Revisar" src="swap/review">
     A revisão mostra o que você recebe **no mínimo** (o mínimo gravado na rede), o impacto no preço e cada rota. Toque em
-    outra rota para escolher você mesmo. Antes de o deslize liberar, o Kawase **ensaia a troca na Arc** a partir do seu endereço: o que sai e o que chega pelos registros da rede, os contratos que ela toca e o bloco. Uma troca que falharia para ali, nas palavras da própria Arc.
+    outra rota para escolher você mesmo. Antes de o deslize liberar, o Kawase **simula a troca na rede** a partir do seu endereço: o que sai e o que chega pelos registros da rede, os contratos que ela toca e o bloco. Uma troca que falharia para ali, nas palavras da própria rede, e cada preço novo é simulado de novo antes de você poder deslizar.
 
     <Pin at="68 15">O que você recebe e o mínimo garantido</Pin>
 
@@ -46,7 +46,7 @@ que entregariam, ou por que não cotaram. Convidados também veem a disputa: voc
 
     <Pin box="5 44.2 90 5.4">As plataformas que não cotaram</Pin>
 
-    <Pin box="5 66.8 90 14">Ensaiado na Arc: o que sai e chega, o que toca</Pin>
+    <Pin box="5 66.8 90 14">Simulado: o que sai e chega, o que toca</Pin>
 
     <Pin box="5 84 90 6.8">Deslize para trocar</Pin>
   </WalkStep>

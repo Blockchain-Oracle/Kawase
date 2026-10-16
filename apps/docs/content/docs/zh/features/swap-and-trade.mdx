@@ -1,7 +1,7 @@
 ---
 title: "交易任意代币"
 description: "市场行情、Arc 上每个代币的独立页面及其安全检查，以及从六个同时竞价的平台中选出最优价，买入、卖出或兑换任意交易对，滑动一次即可确认。"
-sourceHash: 38cd4364250c2fb4
+sourceHash: 0e5da161bf23bd18
 ---
 
 <Status ids="swap" />
@@ -11,7 +11,7 @@ sourceHash: 38cd4364250c2fb4
 <Flow>
   <FlowStep icon="coins" title="选择交易对">用你持有的任意代币支付，换成任意代币。</FlowStep>
   <FlowStep icon="route" title="竞价" tone="accent">六个平台同时报价；到账最多的胜出。</FlowStep>
-  <FlowStep icon="hand" title="滑动">至少能得到多少，已在 Arc 上预演。滑动一次。</FlowStep>
+  <FlowStep icon="hand" title="滑动">至少能得到多少，先经过模拟。滑动一次。</FlowStep>
   <FlowStep icon="receipt" title="收据" tone="ink">授权和兑换在同一笔交易中完成。</FlowStep>
 </Flow>
 
@@ -36,7 +36,7 @@ sourceHash: 38cd4364250c2fb4
     <Pin box="5 67.5 90 9.5">胜出的平台，以及有几个回复</Pin>
   </WalkStep>
   <WalkStep title="核对" src="swap/review">
-    核对页显示你**至少**能得到多少（链上的最低值）、价格影响以及每条路线。轻点另一条路线即可自己选择。在滑块解锁之前，Kawase 会从你的地址**在 Arc 上预演这次兑换**：按链上日志显示转出和到账的金额、涉及的合约以及区块。会回滚的兑换会在这里停下，并给出 Arc 自己的说明。
+    核对页显示你**至少**能得到多少（链上的最低值）、价格影响以及每条路线。轻点另一条路线即可自己选择。在滑块解锁之前，Kawase 会从你的地址**在链上模拟这次兑换**：按链上日志显示转出和到账的金额、涉及的合约以及区块。会回滚的兑换会在这里停下，并给出链上自己的说明；每次刷新价格后都会再模拟一次，然后你才能滑动。
 
     <Pin at="68 15">你将获得多少，以及最低保证</Pin>
 
@@ -44,7 +44,7 @@ sourceHash: 38cd4364250c2fb4
 
     <Pin box="5 44.2 90 5.4">没有报价的平台</Pin>
 
-    <Pin box="5 66.8 90 14">已在 Arc 上预演：转出与到账，涉及的合约</Pin>
+    <Pin box="5 66.8 90 14">已模拟：转出与到账，涉及的合约</Pin>
 
     <Pin box="5 84 90 6.8">滑动以兑换</Pin>
   </WalkStep>

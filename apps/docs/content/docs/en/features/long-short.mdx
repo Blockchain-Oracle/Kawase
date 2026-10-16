@@ -76,7 +76,8 @@ never confirm numbers you didn't see.
 
 The whole position opens or closes as **one transaction** from your own wallet (an EIP-7702 batch). The swap legs come
 from KyberSwap with checked calldata. Each loop borrows only down to a safe health at oracle prices, and the account
-opens at a **health of 1.10 or more**.
+opens at a **health of 1.10 or more**. Before you slide, the whole batch is **simulated on the chain** from your address;
+a position that would fail stops there.
 
 ## Markets and leverage
 

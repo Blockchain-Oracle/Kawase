@@ -9,7 +9,7 @@ description: Pay anyone by @handle, contact, address or QR code in any token you
 
 <Flow>
   <FlowStep icon="at-sign" title="Who">An @handle, a contact, an address or a QR code.</FlowStep>
-  <FlowStep icon="shield" title="Checked">The recipient, your budget, then a rehearsal on Arc.</FlowStep>
+  <FlowStep icon="shield" title="Checked">The recipient, your budget, then a simulation on the chain.</FlowStep>
   <FlowFork>
     <FlowStep when="A contact, inside your budget" icon="zap" title="Sent at once" />
     <FlowStep when="Someone new, or above it" icon="fingerprint" title="You confirm" tone="accent">Face ID, your fingerprint, or an email code on the web.</FlowStep>
@@ -43,15 +43,15 @@ hold on Arc**.
   </WalkStep>
   <WalkStep title="Review" src="send/review">
     Everything is on one card before anything moves: the amount, who it goes to and **where that address came from**,
-    the network and its fee, and what Kawase needs from you. Kawase then **rehearses the send on Arc** from your own
+    the network and its fee, and what Kawase needs from you. Kawase then **simulates the send on the chain** from your own
     address: what will leave, by the chain's own logs, and the block it ran on. A send that would fail stops here,
-    before you sign. Below it, **Their wallet is on another chain?** sends USDC there by a bridge instead.
+    before you sign; **Simulate again** runs it once more. Below it, **Their wallet is on another chain?** sends USDC there by a bridge instead.
 
     <Pin box="5 31.8 90 12">The recipient, and how Kawase knows the address</Pin>
 
     <Pin box="5 46 90 10.3">A first payment can go as a test amount first</Pin>
 
-    <Pin box="5 76.6 90 11">Rehearsed on Arc: what will leave, and the block</Pin>
+    <Pin box="5 76.6 90 11">Simulated: what will leave, and the block</Pin>
 
     <Pin box="5 89.7 90 7">Confirm with an email code (Face ID on a phone)</Pin>
   </WalkStep>

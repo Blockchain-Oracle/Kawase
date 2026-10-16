@@ -1,7 +1,7 @@
 ---
 title: "Pont et retrait"
 description: "Déplacez des USDC d'Arc vers Base, Ethereum, Arbitrum, Optimism, Polygon ou Avalanche, pour vous ou n'importe qui, au meilleur de sept ponts ; amenez des USDC sur Arc sans gaz ; retirez n'importe quel jeton vers une plateforme d'échange, votre propre portefeuille ou votre banque."
-sourceHash: 49ab4e1673606424
+sourceHash: ea88a65075d7231f
 ---
 
 <Status ids="bridge send" />
@@ -70,7 +70,7 @@ avec le même montant et le même destinataire.
 Si vous détenez des USDC à la même adresse sur un autre réseau, **Ajouter de l'argent → Depuis une autre chaîne** les
 trouve (le plus gros solde d'abord) et les amène sur Arc avec le **permis de Relay** : une signature et **aucun gaz requis
 sur ce réseau**. Le permis est vérifié (votre adresse, le montant, le contrat de Relay et l'USDC de ce réseau) avant votre
-signature. Réseau principal uniquement.
+signature. Réseau principal uniquement. La transaction est aussi **simulée sur la chaîne** avant que vous signiez.
 
 ## Retirer
 

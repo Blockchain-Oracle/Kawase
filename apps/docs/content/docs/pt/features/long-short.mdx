@@ -1,7 +1,7 @@
 ---
 title: "Comprado e vendido"
 description: "O Kawase Margin abre uma posição comprada ou vendida alavancada em cirBTC, WETH ou EURC pela sua própria conta Aave V4 na rede principal da Arc, numa única transação que você confirma deslizando, com o preço de liquidação mostrado antes e take-profit e stop-loss opcionais."
-sourceHash: 439241212d1cafdd
+sourceHash: d0ea4569108aadea
 ---
 
 <Status ids="margin" />
@@ -79,7 +79,7 @@ reinicia o deslize, então você nunca confirma números que não viu.
 
 A posição inteira abre ou fecha em **uma única transação** da sua própria carteira (um lote EIP-7702). As trocas vêm da
 KyberSwap com dados de chamada conferidos. Cada ciclo só pega emprestado até uma saúde segura aos preços do oráculo, e a
-conta abre com **saúde de 1,10 ou mais**.
+conta abre com **saúde de 1,10 ou mais**. Antes de você deslizar, o lote inteiro é **simulado na rede** a partir do seu endereço; uma posição que falharia para ali.
 
 ## Mercados e alavancagem
 

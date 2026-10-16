@@ -1,7 +1,7 @@
 ---
 title: "Envoyer, recevoir et demander"
 description: "Payez n'importe qui par @identifiant, contact, adresse ou code QR, avec n'importe quel jeton que vous détenez sur Arc ; recevez sur une seule adresse et son code QR ; demandez de l'argent avec un lien."
-sourceHash: ee6e79f3bd18d952
+sourceHash: 5173f7de84aa2bd0
 ---
 
 <Status ids="send request payment_links" />
@@ -10,7 +10,7 @@ sourceHash: ee6e79f3bd18d952
 
 <Flow>
   <FlowStep icon="at-sign" title="Qui">Un @identifiant, un contact, une adresse ou un code QR.</FlowStep>
-  <FlowStep icon="shield" title="Vérifié">Le destinataire, votre budget, puis une répétition sur Arc.</FlowStep>
+  <FlowStep icon="shield" title="Vérifié">Le destinataire, votre budget, puis une simulation sur la chaîne.</FlowStep>
   <FlowFork>
     <FlowStep when="Un contact, dans votre budget" icon="zap" title="Envoyé tout de suite" />
     <FlowStep when="Quelqu'un de nouveau, ou au-delà" icon="fingerprint" title="Vous confirmez" tone="accent">Face ID, votre empreinte, ou un code par email sur le web.</FlowStep>
@@ -45,13 +45,13 @@ pouvez envoyer **n'importe quel jeton que vous détenez sur Arc**.
   </WalkStep>
   <WalkStep title="Vérifier" src="send/review">
     Tout est sur une seule carte avant que rien ne bouge : le montant, le destinataire et **d'où vient son adresse**, le
-    réseau et ses frais, et ce dont Kawase a besoin de vous. Kawase **répète ensuite l'envoi sur Arc** depuis votre propre adresse : ce qui va partir, d'après les journaux de la chaîne, et le bloc où il a tourné. Un envoi qui échouerait s'arrête ici, avant que vous signiez. En dessous, **Son portefeuille est sur une autre chaîne ?** envoie plutôt des USDC par un pont.
+    réseau et ses frais, et ce dont Kawase a besoin de vous. Kawase **simule ensuite l'envoi sur la chaîne** depuis votre propre adresse : ce qui va partir, d'après les journaux de la chaîne, et le bloc où il a tourné. Un envoi qui échouerait s'arrête ici, avant que vous signiez ; **Simuler à nouveau** le relance. En dessous, **Son portefeuille est sur une autre chaîne ?** envoie plutôt des USDC par un pont.
 
     <Pin box="5 31.8 90 12">Le destinataire, et comment Kawase connaît l'adresse</Pin>
 
     <Pin box="5 46 90 10.3">Un premier paiement peut partir d'abord en montant de test</Pin>
 
-    <Pin box="5 76.6 90 11">Répété sur Arc : ce qui va partir, et le bloc</Pin>
+    <Pin box="5 76.6 90 11">Simulé : ce qui va partir, et le bloc</Pin>
 
     <Pin box="5 89.7 90 7">Confirmez avec un code par email (Face ID sur un téléphone)</Pin>
   </WalkStep>

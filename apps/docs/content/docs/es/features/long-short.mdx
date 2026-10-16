@@ -1,7 +1,7 @@
 ---
 title: "Largo y corto"
 description: "Kawase Margin abre un largo o un corto apalancado en cirBTC, WETH o EURC a través de tu propia cuenta de Aave V4 en la red principal de Arc, en una sola transacción que confirmas deslizando, con el precio de liquidación a la vista y un take-profit y stop-loss opcionales."
-sourceHash: 439241212d1cafdd
+sourceHash: d0ea4569108aadea
 ---
 
 <Status ids="margin" />
@@ -79,7 +79,7 @@ reinicia el deslizamiento, así que nunca confirmas cifras que no viste.
 
 Toda la posición se abre o se cierra en **una sola transacción** desde tu propia billetera (un lote EIP-7702). Los
 intercambios salen de KyberSwap con datos de llamada comprobados. Cada vuelta solo pide prestado hasta una salud segura a
-precios del oráculo, y la cuenta abre con una **salud de 1,10 o más**.
+precios del oráculo, y la cuenta abre con una **salud de 1,10 o más**. Antes de que deslices, todo el lote se **simula en la cadena** desde tu dirección; una posición que fallaría se detiene ahí.
 
 ## Mercados y apalancamiento
 

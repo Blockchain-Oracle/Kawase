@@ -1,7 +1,7 @@
 ---
 title: "转账、收款和收款请求"
 description: "通过 @用户名、联系人、地址或二维码，用你在 Arc 上持有的任意代币向任何人付款；用一个地址和它的二维码收款；用链接向别人要钱。"
-sourceHash: ee6e79f3bd18d952
+sourceHash: 5173f7de84aa2bd0
 ---
 
 <Status ids="send request payment_links" />
@@ -10,7 +10,7 @@ sourceHash: ee6e79f3bd18d952
 
 <Flow>
   <FlowStep icon="at-sign" title="转给谁">@用户名、联系人、地址或二维码。</FlowStep>
-  <FlowStep icon="shield" title="已检查">收款人、你的预算，然后在 Arc 上预演。</FlowStep>
+  <FlowStep icon="shield" title="已检查">收款人、你的预算，然后在链上模拟。</FlowStep>
   <FlowFork>
     <FlowStep when="联系人，且在预算内" icon="zap" title="立即发出" />
     <FlowStep when="新的人，或超出预算" icon="fingerprint" title="由你确认" tone="accent">Face ID、指纹，或网页上的邮箱验证码。</FlowStep>
@@ -42,13 +42,13 @@ sourceHash: ee6e79f3bd18d952
     <Pin at="53 64.6">私人备注，不会写入链上</Pin>
   </WalkStep>
   <WalkStep title="核对" src="send/review">
-    在资金动起来之前，一切都在一张卡片上：金额、收款人以及**这个地址从哪里来**、网络和手续费，还有 Kawase 需要你做什么。接着 Kawase 会从你自己的地址**在 Arc 上预演这笔转账**：按链上日志显示将转出什么，以及在哪个区块上运行。会失败的转账会在这里停下，在你签名之前。下方的“**对方的钱包在另一条链上？**”可以改用跨链把 USDC 发过去。
+    在资金动起来之前，一切都在一张卡片上：金额、收款人以及**这个地址从哪里来**、网络和手续费，还有 Kawase 需要你做什么。接着 Kawase 会从你自己的地址**在链上模拟这笔转账**：按链上日志显示将转出什么，以及在哪个区块上运行。会失败的转账会在这里停下，在你签名之前；“**再次模拟**”会重新运行一次。下方的“**对方的钱包在另一条链上？**”可以改用跨链把 USDC 发过去。
 
     <Pin box="5 31.8 90 12">收款人，以及 Kawase 如何知道这个地址</Pin>
 
     <Pin box="5 46 90 10.3">第一次付款可以先发一笔测试金额</Pin>
 
-    <Pin box="5 76.6 90 11">已在 Arc 上预演：将转出什么，以及区块</Pin>
+    <Pin box="5 76.6 90 11">已模拟：将转出什么，以及区块</Pin>
 
     <Pin box="5 89.7 90 7">用邮箱验证码确认（手机上用 Face ID）</Pin>
   </WalkStep>

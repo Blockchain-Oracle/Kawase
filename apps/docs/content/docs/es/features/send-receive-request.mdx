@@ -1,7 +1,7 @@
 ---
 title: "Enviar, recibir y pedir dinero"
 description: "Paga a cualquiera por @alias, contacto, dirección o código QR con cualquier token que tengas en Arc; recibe en una sola dirección y su código QR; pide dinero con un enlace."
-sourceHash: ee6e79f3bd18d952
+sourceHash: 5173f7de84aa2bd0
 ---
 
 <Status ids="send request payment_links" />
@@ -10,7 +10,7 @@ sourceHash: ee6e79f3bd18d952
 
 <Flow>
   <FlowStep icon="at-sign" title="A quién">Un @alias, un contacto, una dirección o un código QR.</FlowStep>
-  <FlowStep icon="shield" title="Comprobado">El destinatario, tu presupuesto y luego un ensayo en Arc.</FlowStep>
+  <FlowStep icon="shield" title="Comprobado">El destinatario, tu presupuesto y luego una simulación en la cadena.</FlowStep>
   <FlowFork>
     <FlowStep when="Un contacto, dentro del presupuesto" icon="zap" title="Sale al momento" />
     <FlowStep when="Alguien nuevo, o por encima" icon="fingerprint" title="Tú confirmas" tone="accent">Face ID, tu huella o un código por email en la web.</FlowStep>
@@ -45,13 +45,13 @@ Abre **Enviar** desde **+**, o simplemente dilo («envía 5 dólares a @ines», 
   </WalkStep>
   <WalkStep title="Revisar" src="send/review">
     Todo está en una sola tarjeta antes de que nada se mueva: el importe, a quién va y **de dónde salió esa dirección**,
-    la red y su comisión, y lo que Kawase necesita de ti. Después Kawase **ensaya el envío en Arc** desde tu propia dirección: lo que va a salir, según los registros de la cadena, y el bloque en que se ejecutó. Un envío que fallaría se detiene aquí, antes de que firmes. Debajo, **¿Su billetera está en otra cadena?** envía USDC allí por un puente.
+    la red y su comisión, y lo que Kawase necesita de ti. Después Kawase **simula el envío en la cadena** desde tu propia dirección: lo que va a salir, según los registros de la cadena, y el bloque en que se ejecutó. Un envío que fallaría se detiene aquí, antes de que firmes; **Simular de nuevo** lo repite. Debajo, **¿Su billetera está en otra cadena?** envía USDC allí por un puente.
 
     <Pin box="5 31.8 90 12">El destinatario, y cómo conoce Kawase la dirección</Pin>
 
     <Pin box="5 46 90 10.3">Un primer pago puede ir antes como importe de prueba</Pin>
 
-    <Pin box="5 76.6 90 11">Ensayado en Arc: lo que va a salir, y el bloque</Pin>
+    <Pin box="5 76.6 90 11">Simulado: lo que va a salir, y el bloque</Pin>
 
     <Pin box="5 89.7 90 7">Confirma con un código por email (Face ID en un teléfono)</Pin>
   </WalkStep>

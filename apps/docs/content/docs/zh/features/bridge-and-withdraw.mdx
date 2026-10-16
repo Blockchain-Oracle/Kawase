@@ -1,7 +1,7 @@
 ---
 title: "跨链和提现"
 description: "通过七座跨链桥中最优的一座，把 USDC 从 Arc 转到 Base、Ethereum、Arbitrum、Optimism、Polygon 或 Avalanche，转给自己或任何人；无需 gas 把 USDC 带到 Arc；把任意代币提现到交易所、你自己的钱包或银行。"
-sourceHash: 49ab4e1673606424
+sourceHash: ea88a65075d7231f
 ---
 
 <Status ids="bridge send" />
@@ -63,7 +63,7 @@ sourceHash: 49ab4e1673606424
 ## 把 USDC 带到 Arc
 
 如果你在另一个网络的同一地址上有 USDC，**充值 → 从其他链转入**会找到它（余额最大的优先），用 **Relay 的许可签名**把它带到
-Arc：只需一次签名，**无需该网络的 gas**。签名前会检查许可内容（你的地址、金额、Relay 的合约和该网络的 USDC）。仅限主网。
+Arc：只需一次签名，**无需该网络的 gas**。签名前会检查许可内容（你的地址、金额、Relay 的合约和该网络的 USDC）。仅限主网。这笔转移在你签名前也会先**在链上模拟**。
 
 ## 提现
 

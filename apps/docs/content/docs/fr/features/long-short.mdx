@@ -1,7 +1,7 @@
 ---
 title: "Long et short"
 description: "Kawase Margin ouvre un long ou un short à effet de levier sur cirBTC, WETH ou EURC via votre propre compte Aave V4 sur le réseau principal Arc, en une seule transaction confirmée d'un glissement, avec le prix de liquidation affiché d'abord et un take-profit et un stop-loss facultatifs."
-sourceHash: 439241212d1cafdd
+sourceHash: d0ea4569108aadea
 ---
 
 <Status ids="margin" />
@@ -80,7 +80,7 @@ changement du plan réinitialise le glissement : vous ne confirmez jamais des ch
 
 Toute la position s'ouvre ou se ferme en **une seule transaction** depuis votre propre portefeuille (un lot EIP-7702). Les
 échanges passent par KyberSwap avec des données d'appel vérifiées. Chaque boucle n'emprunte que jusqu'à une santé sûre aux
-prix de l'oracle, et le compte s'ouvre avec une **santé de 1,10 ou plus**.
+prix de l'oracle, et le compte s'ouvre avec une **santé de 1,10 ou plus**. Avant que vous glissiez, tout le lot est **simulé sur la chaîne** depuis votre adresse ; une position qui échouerait s'arrête là.
 
 ## Marchés et levier
 
