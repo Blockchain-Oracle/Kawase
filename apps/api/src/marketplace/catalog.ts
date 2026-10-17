@@ -7,6 +7,7 @@ import type { CatalogToolDetail, CatalogToolView, CatalogView, ServiceListing } 
 import { getExchangeIdentity, getProviderIdentity } from "@kawase/identity";
 import { amount, formatPrice } from "@kawase/money";
 import type { NetworkContext } from "@kawase/networks";
+import { HTTP, problem } from "../http/problem";
 import { brandDomain } from "./brand-logos";
 import { buildCatalog, filterCatalog, toolKeyOf, toolOf, type Catalog, type CatalogFilter, type CatalogTool, type Discovery, type Listing, type Party, type Rail } from "@kawase/integrations-x402";
 
@@ -91,7 +92,11 @@ export class CatalogService {
   constructor(private readonly discovery: Discovery) {}
 
   private async catalog(network: NetworkContext): Promise<{ catalog: Catalog; readAt: string | null; stale: boolean }> {
-    const listings = await this.discovery.all(network);
+    // A first read that fails has no last good copy to serve: the source (Circle's catalog, or the testnet demo
+    // seller) didn't answer, which is a provider's outage, not ours.
+    const listings = await this.discovery.all(network).catch(() => {
+      throw problem(HTTP.badGateway, "upstream", network.isRealMoney ? "Circle's catalog did not answer" : "Kawase's test seller did not answer");
+    });
     let catalog = this.built.get(listings);
     if (!catalog) {
       catalog = buildCatalog(listings);

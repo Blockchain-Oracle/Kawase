@@ -72,7 +72,19 @@ export function useCatalog(query: string, category: MarketplaceCategory | null):
       .finally(() => setLoadingMore(false));
   }, [category, loading, loadingMore, network, tools.length, view, words]);
 
-  return { view, tools, loading, loadingMore, failed, readAt, reload: () => setTick((value) => value + 1), more };
+  // The list kept after a failed refresh is the one read on this network; another network's never shows here (switching
+  // to testnet while its catalog failed showed mainnet's tools under the testnet banner).
+  const shown = view?.network === network ? view : undefined;
+  return {
+    view: shown,
+    tools: shown ? tools : [],
+    loading,
+    loadingMore,
+    failed,
+    readAt: shown ? readAt : undefined,
+    reload: () => setTick((value) => value + 1),
+    more,
+  };
 }
 
 export function useTool(key: string | null, group: string | null) {
@@ -99,6 +111,6 @@ export function useTool(key: string | null, group: string | null) {
       live = false;
     };
   }, [key, group, network, tick]);
-  const shown = detail && detail.tool.key === key ? detail : undefined;
+  const shown = detail && detail.tool.key === key && detail.network === network ? detail : undefined;
   return { detail: shown, failed, loading, reload: () => setTick((value) => value + 1) };
 }
