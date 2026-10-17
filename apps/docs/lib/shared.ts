@@ -13,6 +13,7 @@ export const links = {
   landing: process.env.NEXT_PUBLIC_LANDING_URL ?? PUBLIC_LINKS.landing,
   docs: process.env.NEXT_PUBLIC_DOCS_URL ?? PUBLIC_LINKS.docs,
   github: PUBLIC_LINKS.github,
+  x: PUBLIC_LINKS.x,
   androidApk: PUBLIC_LINKS.androidApk,
   testFlight: process.env.NEXT_PUBLIC_TESTFLIGHT_URL ?? PUBLIC_LINKS.testFlight,
 } as const;

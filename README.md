@@ -146,7 +146,7 @@ reads it before it says something can be done.
 
 ## Architecture
 
-[![Kawase architecture diagram showing one app, the shared agent turn, voice via LiveKit, and Postgres, Privy, Arc, and Circle](apps/docs/public/media/architecture/architecture.png)](apps/docs/public/media/architecture/architecture.png)
+[![Kawase architecture diagram showing one app, the shared agent turn, voice via LiveKit, with Arc and Circle underneath](apps/docs/public/media/architecture/architecture-v2.png)](apps/docs/public/media/architecture/architecture-v2.png)
 
 - **Your wallet** is an ordinary EOA whose key **Privy** keeps split up in secure enclaves (no seed phrase, no PIN), one
   address on both networks. Kawase upgrades it in place with **EIP-7702** to MetaMask's `EIP7702StatelessDeleGator`; you sign

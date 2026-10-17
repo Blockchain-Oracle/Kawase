@@ -47,6 +47,7 @@ const COLUMNS = [
       { label: "Demo and evidence", href: "/demo" },
       { label: "Live counts", href: "/live" },
       { label: "Source on GitHub", href: links.github },
+      { label: "Follow on X", href: links.x },
     ],
   },
   {

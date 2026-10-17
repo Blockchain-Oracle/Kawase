@@ -10,6 +10,7 @@ export const PUBLIC_LINKS = {
   docs: "https://docs.getkawase.xyz",
   landing: "https://getkawase.xyz",
   github: "https://github.com/Blockchain-Oracle/Kawase",
+  x: "https://x.com/getkawase",
   /** Where a person reports a problem (no support mailbox exists yet; the repository's issues are public and watched). */
   support: "https://github.com/Blockchain-Oracle/Kawase/issues/new",
   /**

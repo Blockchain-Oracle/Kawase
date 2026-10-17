@@ -7,6 +7,7 @@ export const links = {
   docs: process.env.NEXT_PUBLIC_DOCS_URL ?? PUBLIC_LINKS.docs,
   landing: process.env.NEXT_PUBLIC_LANDING_URL ?? PUBLIC_LINKS.landing,
   github: PUBLIC_LINKS.github,
+  x: PUBLIC_LINKS.x,
   androidApk: PUBLIC_LINKS.androidApk,
   /** The desktop preview for Apple-silicon Macs (not notarized yet; every surface says so next to the link). */
   desktopMac: PUBLIC_LINKS.desktopMac,

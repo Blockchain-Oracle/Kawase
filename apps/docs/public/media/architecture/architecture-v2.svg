@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
 <title id="title">Kawase architecture: one app, one agent, Arc and Circle</title>
-<desc id="desc">The Kawase app sends chat and screens to the Kawase API. Voice travels over LiveKit Cloud to a voice worker and into the same agent turn. The API uses Postgres for state, Privy for identity, Arc for settlement, and Circle for wallet and money services.</desc>
+<desc id="desc">The Kawase app sends chat and screens to the Kawase API. Voice travels over LiveKit Cloud to a voice worker and into the same agent turn. The agent executes money actions on Arc, using Circle App Kit, CCTP, Wallets, Gateway, Onramp, and Faucet services.</desc>
 <defs>
   <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto"><path d="M1 1 L11 6 L1 11" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
   <marker id="arrowLight" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto"><path d="M1 1 L11 6 L1 11" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
@@ -35,9 +35,11 @@
 <path class="line" d="M1392 530 H1259" marker-end="url(#arrow)"/>
 <rect x="1266" y="478" width="116" height="35" rx="17" fill="#F5F5F5"/>
 <text x="1324" y="503" class="medium" text-anchor="middle" font-size="21">Same turn</text>
-<path class="line" d="M983 652 V768" marker-end="url(#arrow)"/>
-<rect x="1003" y="688" width="235" height="42" rx="21" fill="#F5F5F5"/>
-<text x="1020" y="717" class="medium muted" font-size="21">State + execution</text>
+<path class="line" d="M983 652 V730"/>
+<path class="line" d="M983 730 H506 V802" marker-end="url(#arrow)"/>
+<path class="line" d="M983 730 H1395 V802" marker-end="url(#arrow)"/>
+<rect x="1005" y="672" width="245" height="42" rx="21" fill="#F5F5F5"/>
+<text x="1022" y="701" class="medium muted" font-size="21">Executes money actions</text>
 
 <!-- Input -->
 <rect x="76" y="353" width="470" height="299" rx="27" fill="#FFFFFF"/>
@@ -75,27 +77,21 @@
 <text x="1432" y="576" class="medium" font-size="25">LiveKit Agents · GPT-Live</text>
 <text x="1432" y="613" class="muted" font-size="23">Same tools. Same limits.</text>
 
-<!-- Foundation -->
-<text x="77" y="789" class="medium muted" font-size="24">Where the agent acts</text>
-<rect x="76" y="816" width="331" height="193" rx="25" fill="#FFFFFF"/>
-<text x="106" y="876" class="heavy" font-size="38">Postgres 17</text>
-<text x="108" y="923" class="muted" font-size="24">State · events · outbox</text>
-<path d="M107 961 H375" stroke="#E2E2E2" stroke-width="2"/>
-<text x="108" y="985" class="muted" font-size="19">The only store and bus</text>
-<rect x="426" y="816" width="331" height="193" rx="25" fill="#FFFFFF"/>
-<text x="456" y="876" class="heavy" font-size="39">Privy</text>
-<text x="456" y="923" class="muted" font-size="24">Sign-in · wallet keys</text>
-<path d="M456 961 H725" stroke="#E2E2E2" stroke-width="2"/>
-<text x="456" y="985" class="muted" font-size="19">User-controlled account</text>
-<rect x="776" y="816" width="472" height="193" rx="25" fill="#111111"/>
-<image x="810" y="849" width="71" height="71" xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0ibm9uZSIgdmlld0JveD0iMCAwIDI0IDI0Ij4KICAgIDxnIGNsaXAtcGF0aD0idXJsKCNhcmNfX2EpIj4KICAgICAgICA8cGF0aCBmaWxsPSJ1cmwoI2FyY19fYikiIGQ9Ik0yNCAwSDB2MjRoMjR6Ii8+CiAgICAgICAgPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTQuNSAxOS45OTljLjEzLTMuOTE3Ljc5NC03LjU3MiAxLjkwNC0xMC40MTVDNy44MSA1Ljk4NCA5Ljg0NSA0IDEyLjEzNCA0czQuMzI0IDEuOTgzIDUuNzMgNS41ODVjLjczMSAxLjg3MiAxLjI3IDQuMDk4IDEuNTg4IDYuNTJxLjA0Mi4zMjQuMDc4LjY1NC4wMTMuMDIxLjAxMS4wMzdzLjE4NyAxLjE3LjIyNyAzLjIwNGgtLjAyYy0uMjc5LS4yMjktMy41NTYtMi44MDQtOC45ODktMi4wNTguMDgyLS45Mi4xOTUtMS44MTQuMzQtMi42NzFsLjAyNC0uMTNhMjEuOCAyMS44IDAgMCAxIDUuNDI2LjUwOGwtLjAxNS0uMTAzYy0uMjk0LTEuODMtLjcyOC0zLjUwNi0xLjI4Ny00LjkzOS0uOTE1LTIuMzQyLTIuMTA4LTMuNzk3LTMuMTE0LTMuNzk3UzkuOTM0IDguMjY1IDkuMDIgMTAuNjA3YTIwIDIwIDAgMCAwLS42MDQgMS44MDggMjcgMjcgMCAwIDAtLjYzOCAyLjg1NkEzNiAzNiAwIDAgMCA3LjMxMSAyMEg0LjV6Ii8+CiAgICA8L2c+CiAgICA8ZGVmcz4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFyY19fYiIgeDE9IjEyIiB4Mj0iMTIiIHkxPSIwIiB5Mj0iMjQiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgICAgICAgPHN0b3Agc3RvcC1jb2xvcj0iIzE4MjY4MCIvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4NDJENTYiLz4KICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxjbGlwUGF0aCBpZD0iYXJjX19hIj4KICAgICAgICAgICAgPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMGgyNHYyNEgweiIvPgogICAgICAgIDwvY2xpcFBhdGg+CiAgICA8L2RlZnM+Cjwvc3ZnPgo="/>
-<text x="900" y="902" class="heavy white" font-size="52">Arc</text>
-<text x="810" y="949" class="white medium" font-size="25">USDC gas · settlement</text>
-<text x="810" y="985" class="quiet" font-size="21">Mainnet + testnet</text>
-<rect x="1267" y="816" width="563" height="193" rx="25" fill="#111111"/>
-<image x="1303" y="849" width="72" height="72" xlink:href="data:image/svg+xml;base64,PHN2ZyByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDBFNTk5IiBkPSJNMjAuNzg4IDMuODMyYy0uMTAxLS4xMDUtLjE5Ny0uMjEzLS4zMDEtLjMxNy0uMTAzLS4xMDMtLjIxMS0uMjAyLS4zMi0uMzAyQTExLjkwMyAxMS45MDMgMCAwIDAgMTIgMGExMS45MjYgMTEuOTI2IDAgMCAwLTguNDg2IDMuNTE0Qy0xLjA2MiA4LjA5LTEuMTYgMTUuNDcgMy4yMTMgMjAuMTY4Yy4wOTkuMTA4LjE5Ny4yMTQuMy4zMi4xMDQuMTAzLjIxLjIuMzE3LjNBMTEuOTIgMTEuOTIgMCAwIDAgMTIgMjRjMy4yMDYgMCA2LjIyLTEuMjQ3IDguNDg3LTMuNTEyIDQuNTc2LTQuNTc2IDQuNjczLTExLjk1Ni4zMDEtMTYuNjU2em0tMTYuNjU1LjMwMUExMS4wNTcgMTEuMDU3IDAgMCAxIDEyIC44NzRjMi44MjUgMCA1LjQ5IDEuMDQ4IDcuNTUgMi45NThsLTEuMDAxIDEuMDAyQTkuNjQ2IDkuNjQ2IDAgMCAwIDEyIDIuMjkyYTkuNjQ0IDkuNjQ0IDAgMCAwLTYuODY1IDIuODQ0QTkuNjQ0IDkuNjQ0IDAgMCAwIDIuMjkyIDEyYzAgMi40NDguOSA0Ljc1MyAyLjU0MiA2LjU0OUwzLjgzMSAxOS41NUMtLjIwMSAxNS4xOTEtLjEwMSA4LjM2NyA0LjEzMyA0LjEzM3ptMTMuNzk4IDEuMzE4di4wMDJsLTEuMDE1IDEuMDE0QTcuMzQ2IDcuMzQ2IDAgMCAwIDEyIDQuNTg5IDcuMzU3IDcuMzU3IDAgMCAwIDYuNzYxIDYuNzYgNy4zNjIgNy4zNjIgMCAwIDAgNC41ODkgMTJhNy4zNCA3LjM0IDAgMCAwIDEuODc3IDQuOTEzbC0xLjAxNCAxLjAxNkE4Ljc3IDguNzcgMCAwIDEgMy4xNjcgMTJhOC43NyA4Ljc3IDAgMCAxIDIuNTg4LTYuMjQ1QTguNzcxIDguNzcxIDAgMCAxIDEyIDMuMTY3YzIuMjEzIDAgNC4zMDEuODA5IDUuOTMxIDIuMjg0ek0xOC41MzcgMTJjMCAxLjc0NS0uNjgxIDMuMzg3LTEuOTE2IDQuNjIyUzEzLjc0NiAxOC41MzggMTIgMTguNTM4YTYuNDkxIDYuNDkxIDAgMCAxLTQuMjk2LTEuNjIxbC0uMDAxLS4wMDRjLS4xMS0uMDk0LS4yMi0uMTg4LS4zMjQtLjI5MWE2LjAyNyA2LjAyNyAwIDAgMS0uMjkzLS4zMjZBNi40NyA2LjQ3IDAgMCAxIDUuNDY2IDEyYzAtMS43NDYuNjc5LTMuMzg3IDEuOTE0LTQuNjIxQTYuNDg4IDYuNDg4IDAgMCAxIDEyIDUuNDY1YzEuNTk5IDAgMy4xMDUuNTc2IDQuMjk1IDEuNjIuMTExLjA5Ni4yMjQuMTkuMzI2LjI5NS4xMDQuMTA0LjIuMjE0LjI5NS4zMjRBNi40ODIgNi40ODIgMCAwIDEgMTguNTM3IDEyek03LjA4NCAxNy41MzRoLjAwMUE3LjM0OSA3LjM0OSAwIDAgMCAxMiAxOS40MTNhNy4zNSA3LjM1IDAgMCAwIDUuMjM5LTIuMTc0QTcuMzU0IDcuMzU0IDAgMCAwIDE5LjQxMiAxMmE3LjM2NCA3LjM2NCAwIDAgMC0xLjg3Ni00LjkxNmwxLjAxMy0xLjAxMkE4Ljc3NyA4Ljc3NyAwIDAgMSAyMC44MzQgMTJhOC43NjUgOC43NjUgMCAwIDEtMi41ODkgNi4yNDZBOC43NjQgOC43NjQgMCAwIDEgMTIgMjAuODM0YTguNzgyIDguNzgyIDAgMCAxLTUuOTMtMi4yODVsMS4wMTQtMS4wMTV6bTEyLjc4MyAyLjMzM0ExMS4wNDYgMTEuMDQ2IDAgMCAxIDEyIDIzLjEyNWExMS4wNDIgMTEuMDQyIDAgMCAxLTcuNTUxLTIuOTU3bDEuMDA0LTEuMDAxYTkuNjQgOS42NCAwIDAgMCA2LjU0OSAyLjU0MiA5LjYzOSA5LjYzOSAwIDAgMCA2Ljg2NS0yLjg0NkE5LjY0MiA5LjY0MiAwIDAgMCAyMS43MSAxMmE5LjY0IDkuNjQgMCAwIDAtMi41NDMtNi41NDhsMS4wMDEtMS4wMDJjNC4wMzEgNC4zNTkgMy45MzUgMTEuMTgyLS4zMDEgMTUuNDE3eiIvPjwvc3ZnPg=="/>
-<text x="1394" y="902" class="heavy white" font-size="52">Circle</text>
-<text x="1303" y="949" class="white medium" font-size="24">App Kit · CCTP · Wallets</text>
-<text x="1303" y="985" class="quiet" font-size="21">Gateway · Onramp · Faucet</text>
+<!-- Foundation: Arc and Circle are the money layer shown in the demo overview. -->
+<text x="77" y="789" class="medium muted" font-size="24">Where the money moves</text>
+<rect x="76" y="816" width="862" height="193" rx="27" fill="#111111"/>
+<image x="116" y="844" width="94" height="94" xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0ibm9uZSIgdmlld0JveD0iMCAwIDI0IDI0Ij4KICAgIDxnIGNsaXAtcGF0aD0idXJsKCNhcmNfX2EpIj4KICAgICAgICA8cGF0aCBmaWxsPSJ1cmwoI2FyY19fYikiIGQ9Ik0yNCAwSDB2MjRoMjR6Ii8+CiAgICAgICAgPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTQuNSAxOS45OTljLjEzLTMuOTE3Ljc5NC03LjU3MiAxLjkwNC0xMC40MTVDNy44MSA1Ljk4NCA5Ljg0NSA0IDEyLjEzNCA0czQuMzI0IDEuOTgzIDUuNzMgNS41ODVjLjczMSAxLjg3MiAxLjI3IDQuMDk4IDEuNTg4IDYuNTJxLjA0Mi4zMjQuMDc4LjY1NC4wMTMuMDIxLjAxMS4wMzdzLjE4NyAxLjE3LjIyNyAzLjIwNGgtLjAyYy0uMjc5LS4yMjktMy41NTYtMi44MDQtOC45ODktMi4wNTguMDgyLS45Mi4xOTUtMS44MTQuMzQtMi42NzFsLjAyNC0uMTNhMjEuOCAyMS44IDAgMCAxIDUuNDI2LjUwOGwtLjAxNS0uMTAzYy0uMjk0LTEuODMtLjcyOC0zLjUwNi0xLjI4Ny00LjkzOS0uOTE1LTIuMzQyLTIuMTA4LTMuNzk3LTMuMTE0LTMuNzk3UzkuOTM0IDguMjY1IDkuMDIgMTAuNjA3YTIwIDIwIDAgMCAwLS42MDQgMS44MDggMjcgMjcgMCAwIDAtLjYzOCAyLjg1NkEzNiAzNiAwIDAgMCA3LjMxMSAyMEg0LjV6Ii8+CiAgICA8L2c+CiAgICA8ZGVmcz4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFyY19fYiIgeDE9IjEyIiB4Mj0iMTIiIHkxPSIwIiB5Mj0iMjQiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgICAgICAgPHN0b3Agc3RvcC1jb2xvcj0iIzE4MjY4MCIvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4NDJENTYiLz4KICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxjbGlwUGF0aCBpZD0iYXJjX19hIj4KICAgICAgICAgICAgPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMGgyNHYyNEgweiIvPgogICAgICAgIDwvY2xpcFBhdGg+CiAgICA8L2RlZnM+Cjwvc3ZnPgo="/>
+<text x="233" y="918" class="heavy white" font-size="68">Arc</text>
+<path d="M482 850 V978" stroke="#3A3A3A" stroke-width="2"/>
+<text x="520" y="882" class="white medium" font-size="30">Onchain settlement</text>
+<text x="520" y="929" class="quiet" font-size="25">Mainnet + testnet</text>
+<text x="520" y="971" class="quiet" font-size="23">USDC as gas</text>
+<rect x="958" y="816" width="872" height="193" rx="27" fill="#111111"/>
+<image x="998" y="844" width="94" height="94" xlink:href="data:image/svg+xml;base64,PHN2ZyByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDBFNTk5IiBkPSJNMjAuNzg4IDMuODMyYy0uMTAxLS4xMDUtLjE5Ny0uMjEzLS4zMDEtLjMxNy0uMTAzLS4xMDMtLjIxMS0uMjAyLS4zMi0uMzAyQTExLjkwMyAxMS45MDMgMCAwIDAgMTIgMGExMS45MjYgMTEuOTI2IDAgMCAwLTguNDg2IDMuNTE0Qy0xLjA2MiA4LjA5LTEuMTYgMTUuNDcgMy4yMTMgMjAuMTY4Yy4wOTkuMTA4LjE5Ny4yMTQuMy4zMi4xMDQuMTAzLjIxLjIuMzE3LjNBMTEuOTIgMTEuOTIgMCAwIDAgMTIgMjRjMy4yMDYgMCA2LjIyLTEuMjQ3IDguNDg3LTMuNTEyIDQuNTc2LTQuNTc2IDQuNjczLTExLjk1Ni4zMDEtMTYuNjU2em0tMTYuNjU1LjMwMUExMS4wNTcgMTEuMDU3IDAgMCAxIDEyIC44NzRjMi44MjUgMCA1LjQ5IDEuMDQ4IDcuNTUgMi45NThsLTEuMDAxIDEuMDAyQTkuNjQ2IDkuNjQ2IDAgMCAwIDEyIDIuMjkyYTkuNjQ0IDkuNjQ0IDAgMCAwLTYuODY1IDIuODQ0QTkuNjQ0IDkuNjQ0IDAgMCAwIDIuMjkyIDEyYzAgMi40NDguOSA0Ljc1MyAyLjU0MiA2LjU0OUwzLjgzMSAxOS41NUMtLjIwMSAxNS4xOTEtLjEwMSA4LjM2NyA0LjEzMyA0LjEzM3ptMTMuNzk4IDEuMzE4di4wMDJsLTEuMDE1IDEuMDE0QTcuMzQ2IDcuMzQ2IDAgMCAwIDEyIDQuNTg5IDcuMzU3IDcuMzU3IDAgMCAwIDYuNzYxIDYuNzYgNy4zNjIgNy4zNjIgMCAwIDAgNC41ODkgMTJhNy4zNCA3LjM0IDAgMCAwIDEuODc3IDQuOTEzbC0xLjAxNCAxLjAxNkE4Ljc3IDguNzcgMCAwIDEgMy4xNjcgMTJhOC43NyA4Ljc3IDAgMCAxIDIuNTg4LTYuMjQ1QTguNzcxIDguNzcxIDAgMCAxIDEyIDMuMTY3YzIuMjEzIDAgNC4zMDEuODA5IDUuOTMxIDIuMjg0ek0xOC41MzcgMTJjMCAxLjc0NS0uNjgxIDMuMzg3LTEuOTE2IDQuNjIyUzEzLjc0NiAxOC41MzggMTIgMTguNTM4YTYuNDkxIDYuNDkxIDAgMCAxLTQuMjk2LTEuNjIxbC0uMDAxLS4wMDRjLS4xMS0uMDk0LS4yMi0uMTg4LS4zMjQtLjI5MWE2LjAyNyA2LjAyNyAwIDAgMS0uMjkzLS4zMjZBNi40NyA2LjQ3IDAgMCAxIDUuNDY2IDEyYzAtMS43NDYuNjc5LTMuMzg3IDEuOTE0LTQuNjIxQTYuNDg4IDYuNDg4IDAgMCAxIDEyIDUuNDY1YzEuNTk5IDAgMy4xMDUuNTc2IDQuMjk1IDEuNjIuMTExLjA5Ni4yMjQuMTkuMzI2LjI5NS4xMDQuMTA0LjIuMjE0LjI5NS4zMjRBNi40ODIgNi40ODIgMCAwIDEgMTguNTM3IDEyek03LjA4NCAxNy41MzRoLjAwMUE3LjM0OSA3LjM0OSAwIDAgMCAxMiAxOS40MTNhNy4zNSA3LjM1IDAgMCAwIDUuMjM5LTIuMTc0QTcuMzU0IDcuMzU0IDAgMCAwIDE5LjQxMiAxMmE3LjM2NCA3LjM2NCAwIDAgMC0xLjg3Ni00LjkxNmwxLjAxMy0xLjAxMkE4Ljc3NyA4Ljc3NyAwIDAgMSAyMC44MzQgMTJhOC43NjUgOC43NjUgMCAwIDEtMi41ODkgNi4yNDZBOC43NjQgOC43NjQgMCAwIDEgMTIgMjAuODM0YTguNzgyIDguNzgyIDAgMCAxLTUuOTMtMi4yODVsMS4wMTQtMS4wMTV6bTEyLjc4MyAyLjMzM0ExMS4wNDYgMTEuMDQ2IDAgMCAxIDEyIDIzLjEyNWExMS4wNDIgMTEuMDQyIDAgMCAxLTcuNTUxLTIuOTU3bDEuMDA0LTEuMDAxYTkuNjQgOS42NCAwIDAgMCA2LjU0OSAyLjU0MiA5LjYzOSA5LjYzOSAwIDAgMCA2Ljg2NS0yLjg0NkE5LjY0MiA5LjY0MiAwIDAgMCAyMS43MSAxMmE5LjY0IDkuNjQgMCAwIDAtMi41NDMtNi41NDhsMS4wMDEtMS4wMDJjNC4wMzEgNC4zNTkgMy45MzUgMTEuMTgyLS4zMDEgMTUuNDE3eiIvPjwvc3ZnPg=="/>
+<text x="1115" y="918" class="heavy white" font-size="68">Circle</text>
+<path d="M1371 850 V978" stroke="#3A3A3A" stroke-width="2"/>
+<text x="1408" y="882" class="white medium" font-size="30">App Kit</text>
+<text x="1408" y="929" class="quiet" font-size="25">CCTP bridges · Wallets</text>
+<text x="1408" y="971" class="quiet" font-size="22">Gateway · Onramp · Faucet</text>
 <text x="1845" y="1053" text-anchor="end" class="muted" font-size="18">Kawase · technical overview</text>
 </svg>

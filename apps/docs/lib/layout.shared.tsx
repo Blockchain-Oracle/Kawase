@@ -32,6 +32,7 @@ export function baseOptions(lang: string): BaseLayoutProps {
     links: [
       { text: t.nav.webApp, url: links.webApp, external: true },
       { text: t.nav.showcase, url: links.landing, external: true },
+      { text: "X", url: links.x, external: true },
     ],
   };
 }
