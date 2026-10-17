@@ -18,11 +18,9 @@ type Snapshot = {
   /** Cards that arrived while the full view was down: the card sheet shows the newest until it is seen. */
   unseen: string[];
   threadId: string | null;
-  /** The voice whose hello is playing in Settings → Voice, if one is. */
-  previewing: string | null;
 };
 
-const INITIAL: Snapshot = { phase: "connecting", caption: "", muted: false, cards: [], unseen: [], threadId: null, previewing: null };
+const INITIAL: Snapshot = { phase: "connecting", caption: "", muted: false, cards: [], unseen: [], threadId: null };
 
 let snapshot: Snapshot = INITIAL;
 const listeners = new Set<() => void>();
@@ -38,9 +36,9 @@ export const voiceStore = {
     snapshot = { ...snapshot, ...patch };
     publish();
   },
-  /** A conversation ended: everything back to the start (a preview keeps its own flag). */
+  /** A conversation ended: everything back to the start. */
   reset() {
-    snapshot = { ...INITIAL, previewing: snapshot.previewing };
+    snapshot = INITIAL;
     actions = null;
     publish();
   },

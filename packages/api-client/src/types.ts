@@ -27,7 +27,7 @@ export type ApiUser = {
 
 /** GPT-Live's voices, the speaking pace and whether Kawase greets first (the same shape as @kawase/config's). */
 export type VoicePrefs = {
-  voice: "marin" | "aster" | "beacon" | "cinder" | "stone" | "vesper";
+  voice: "marin" | "beacon" | "cinder" | "stone" | "vesper";
   speed: "relaxed" | "normal" | "brisk";
   autoSpeak: boolean;
 };

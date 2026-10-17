@@ -118,6 +118,8 @@ type NarrationEvents = {
   onStart?: () => void;
   /** The clip finished, or could not play at all (voice owns the audio, autoplay refused, a stalled load). */
   onEnd: () => void;
+  /** Playback speed (1 is as recorded), pitch kept: Settings → Voice plays its samples at the chosen pace. */
+  rate?: number;
 };
 
 /**
@@ -160,6 +162,8 @@ export function narrate(source: number, events: NarrationEvents): () => void {
       narrator ??= createAudioPlayer(null, { keepAudioSessionActive: true });
       const player = narrator;
       player.replace(source);
+      player.shouldCorrectPitch = true;
+      player.setPlaybackRate(events.rate ?? 1, "high");
       let announced = false;
       subscription = player.addListener("playbackStatusUpdate", (status) => {
         if (status.didJustFinish) {
@@ -173,7 +177,7 @@ export function narrate(source: number, events: NarrationEvents): () => void {
         // A clip that stalls part-way still lets the story move on, a little after it should have ended.
         if (status.duration > 0) {
           clearTimeout(timer);
-          const remainingMs = (status.duration - status.currentTime) * MS_PER_SECOND;
+          const remainingMs = ((status.duration - status.currentTime) * MS_PER_SECOND) / (events.rate ?? 1);
           timer = setTimeout(end, remainingMs + MOTION.narrationSlackMs);
         }
       });

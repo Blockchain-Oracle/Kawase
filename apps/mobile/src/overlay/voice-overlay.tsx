@@ -29,7 +29,6 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
 
 import { BlurOverlay } from "@kawase/ui-native/components/blur-overlay";
 import { focusElement, useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
@@ -47,14 +46,13 @@ import { NEON_WEIGHT } from "@/voice/neon-shared";
 import { NeonRing } from "@/voice/neon-ring";
 import { VoiceCardSheet } from "@/voice/voice-card-sheet";
 import { VoiceIsland } from "@/voice/voice-island";
-import { useVoice, voiceStore } from "@/voice/voice-store";
+import { useVoice } from "@/voice/voice-store";
 
 // LiveKit (the room, its React hooks, WebRTC) is about 1.6 MB of script: it loads when voice mode first opens, not
 // with the app (the web's first paint waited on it).
 const VoiceSession = React.lazy(() =>
   import("@/voice/voice-session").then((module) => ({ default: module.VoiceSession })),
 );
-const VoicePreview = React.lazy(() => import("@/voice/voice-session").then((module) => ({ default: module.VoicePreview })));
 
 export const ORB_DOCK_SIZE = 40;
 /** The orb in the overlay: the screen's one figure (ChatGPT's voice mode), about two thirds of a phone's width. */
@@ -234,18 +232,12 @@ function VoiceStage({ open, level, children, leavingForChat }: VoiceStageProps) 
  * desktop host, the phone's signed-in layout).
  */
 export function VoiceLayer() {
-  const { t } = useT();
   const router = useRouter();
   const overlay = useOverlay();
   const level = useSharedValue(IDLE_LEVEL);
   const leavingForChat = React.useRef(false);
   const full = overlay.current === "voice";
   const live = overlay.voiceLive;
-  const previewing = useVoice((voice) => voice.previewing);
-  const previewDone = React.useCallback((ok: boolean) => {
-    voiceStore.set({ previewing: null });
-    if (!ok) toast.error(t("voice.previewFailed"));
-  }, [t]);
 
   const typeInstead = (threadId: string | undefined) => {
     leavingForChat.current = true;
@@ -263,11 +255,6 @@ export function VoiceLayer() {
       {live ? (
         <React.Suspense fallback={stage(<StateLine labelKey="voice.connecting" />)}>
           <VoiceSession level={level} full={full} stage={stage} onTypeInstead={typeInstead} onEnd={overlay.endVoice} />
-        </React.Suspense>
-      ) : null}
-      {previewing && !live ? (
-        <React.Suspense fallback={null}>
-          <VoicePreview key={previewing} onDone={previewDone} />
         </React.Suspense>
       ) : null}
       {live && !full ? <PageNeon level={level} /> : null}

@@ -33,7 +33,7 @@ import * as React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { DEFAULT_VOICE_PREFS } from "@kawase/config";
+import { DEFAULT_VOICE_PREFS, voicePrefs } from "@kawase/config";
 import { LANGUAGE_NAMES } from "@kawase/i18n/names";
 import { arcIdentity, fiatKey } from "@kawase/identity";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
@@ -60,7 +60,7 @@ import { setFeedbackPreference, useFeedbackPreferences } from "@/feedback/prefer
 import { formatUsd } from "@/budget/format";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
-import { voiceName } from "@/screens/voice-settings-screen";
+import { voiceName } from "@/voice/voice-picker";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -291,7 +291,7 @@ export function SettingsScreen() {
           <ListRow
             leading={<Glyph icon={Mic} />}
             title={t("settings.voice")}
-            trailing={<Value text={voiceName(user?.voicePrefs?.voice ?? DEFAULT_VOICE_PREFS.voice)} />}
+            trailing={<Value text={voiceName(voicePrefs(user?.voicePrefs ?? DEFAULT_VOICE_PREFS).voice)} />}
             onPress={() => go("/voice-settings")}
           />
           <ListRow leading={<Glyph icon={Bell} />} title={t("settings.notifications")} onPress={() => go("/notifications")} />

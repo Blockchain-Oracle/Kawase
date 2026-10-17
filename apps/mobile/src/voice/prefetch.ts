@@ -13,8 +13,6 @@ const SESSION_FRESH_MS = 300_000;
 
 let code: Promise<unknown> | undefined;
 let pending: { at: number; network: string; session: Promise<VoiceSession> } | undefined;
-/** The next session opens with Kawase's hello whatever Settings → Voice says (the picker's "hear this voice"). */
-let greetNext = false;
 
 /** Loads the voice code ahead of the first open (idempotent). */
 export function preloadVoiceCode(): void {
@@ -45,19 +43,8 @@ export function forgetVoiceSession(): void {
   pending = undefined;
 }
 
-/** The next conversation starts with Kawase saying hello in the chosen voice (a fresh session asks for it). */
-export function greetNextSession(): void {
-  pending = undefined;
-  greetNext = true;
-}
-
 /** The session to join: the prefetched one while it is fresh (handed out once), else a new one. */
 export function takeVoiceSession(network: string): Promise<VoiceSession> {
-  if (greetNext) {
-    greetNext = false;
-    pending = undefined;
-    return api.voice.session({ greet: true });
-  }
   const ready = fresh(network) ? pending!.session : undefined;
   pending = undefined;
   return ready ?? api.voice.session();

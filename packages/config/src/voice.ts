@@ -39,9 +39,11 @@ export const VOICE_SPEECH: Record<SupportedLocale, VoiceSpeech> = {
 /**
  * GPT-Live (plan §1.4): OpenAI's full-duplex voice model speaks for Kawase, and every question about money or the
  * account is delegated to Kawase's own agent turn ("client" delegation). The voice names are the ones the installed
- * @livekit/agents-plugin-openai 1.9.1 lists (`GPTLiveVoices`); marin is its default and the narration's voice.
+ * @livekit/agents-plugin-openai 1.9.1 lists (`GPTLiveVoices`); marin is its default and the narration's voice. Aster is
+ * left out: GPT-Live refuses it for Kawase's key ("Voice session access denied", every try on 2026-10-17), so choosing
+ * it put the person on the fallback pipeline; a stored aster reads as the default (`voicePrefs`).
  */
-export const GPT_LIVE_VOICES = ["marin", "aster", "beacon", "cinder", "stone", "vesper"] as const;
+export const GPT_LIVE_VOICES = ["marin", "beacon", "cinder", "stone", "vesper"] as const;
 export type GptLiveVoice = (typeof GPT_LIVE_VOICES)[number];
 
 /** Speaking pace: a TTS speed factor for the fallback pipeline, and a pace hint in GPT-Live's persona. */
