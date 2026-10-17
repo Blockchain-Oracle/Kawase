@@ -146,19 +146,7 @@ reads it before it says something can be done.
 
 ## Architecture
 
-```text
- iPhone / Android / Web / Mac (Expo, Tauri)         LiveKit Cloud (WebRTC)
-        │  chat (SSE), screens                              │ audio
-        ▼                                                    ▼
- ┌────────────────────────────────┐          ┌──────────────────────────────┐
- │ apps/api — Hono on Node        │◀────────▶│ apps/voice-agent             │
- │  agent turn · policy · intents │   turn   │  GPT-Live, same agent turn   │
- │  runners: automations, watch,  │          └──────────────────────────────┘
- │  notifications, reconciliation │
- └──────┬──────────────┬──────────┘
-        ▼              ▼
-   Postgres 17     Arc mainnet / testnet · Circle (Wallets, App Kit, CCTP, Gateway, Onramp, faucet) · Privy
-```
+[![Kawase architecture diagram showing one app, the shared agent turn, voice via LiveKit, and Postgres, Privy, Arc, and Circle](apps/docs/public/media/architecture/architecture.png)](apps/docs/public/media/architecture/architecture.png)
 
 - **Your wallet** is an ordinary EOA whose key **Privy** keeps split up in secure enclaves (no seed phrase, no PIN), one
   address on both networks. Kawase upgrades it in place with **EIP-7702** to MetaMask's `EIP7702StatelessDeleGator`; you sign

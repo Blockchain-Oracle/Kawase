@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+<title id="title">Kawase architecture: one app, one agent, Arc and Circle</title>
+<desc id="desc">The Kawase app sends chat and screens to the Kawase API. Voice travels over LiveKit Cloud to a voice worker and into the same agent turn. The API uses Postgres for state, Privy for identity, Arc for settlement, and Circle for wallet and money services.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto"><path d="M1 1 L11 6 L1 11" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="arrowLight" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto"><path d="M1 1 L11 6 L1 11" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <style>
+    text { font-family: Inter, Arial, Helvetica, sans-serif; fill: #111111; }
+    .heavy { font-weight: 800; letter-spacing: -1.5px; }
+    .medium { font-weight: 600; }
+    .muted { fill: #666666; }
+    .white { fill: #ffffff; }
+    .quiet { fill: #bbbbbb; }
+    .line { fill: none; stroke: #111111; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+    .softline { fill: none; stroke: #888888; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+</defs>
+<rect width="1920" height="1080" fill="#F5F5F5"/>
+<rect x="74" y="58" width="64" height="64" rx="17" fill="#111111"/>
+<image x="74" y="58" width="64" height="64" xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgcng9IjQ4IiBmaWxsPSIjMTExMTExIi8+PHJlY3QgeD0iMTYiIHk9IjE2IiB3aWR0aD0iMTY4IiBoZWlnaHQ9IjE2OCIgcng9IjMyIiBmaWxsPSJub25lIiBzdHJva2U9IiNGQTAwRkYiIHN0cm9rZS13aWR0aD0iNiIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDY5IDM1KSBzY2FsZSgwLjA2MikiPjxwYXRoIGZpbGw9IiNGRkZGRkYiIGQ9Ik0xOTYuOSA1NTguMUg4NzQuN1Y2NjEuMkgxOTYuOVpNNjEuNCAxOTMuMUg3MjMuNlYzMDEuMUg2MS40Wk0zNTYuNyAzNzcuMUg4MTAuNFY0ODAuNUgzNTYuN1pNODI4LjYgNTU4LjFIOTQ4LjNROTQ4LjMgNTU4LjEgOTQ3LjggNTY2LjdROTQ3LjMgNTc1LjMgOTQ2LjUgNTg2UTk0NS43IDU5Ni44IDk0NC43IDYwNC40UTkzNy4xIDcwNS42IDkyNy44IDc3MS4xUTkxOC40IDgzNi41IDkwNi4zIDg3NC40UTg5NC4yIDkxMi4yIDg3OC4yIDkyOVE4NjEuMiA5NDguMyA4NDEuNyA5NTYuMVE4MjIuMSA5NjMuOSA3OTcuNSA5NjdRNzc2LjYgOTY5LjYgNzQyLjMgOTcwLjJRNzA4LjEgOTcwLjcgNjY5LjkgOTY5LjNRNjY4LjkgOTQ0LjYgNjU5LjUgOTEzLjVRNjUwLjEgODgyLjUgNjM1LjkgODU5LjlRNjY4LjggODYzLjIgNjk3LjkgODY0LjJRNzI3IDg2NS4yIDc0MS41IDg2NC40UTc1NC4yIDg2NC40IDc2Mi43IDg2Mi4xUTc3MS4yIDg1OS44IDc3OC44IDg1M1E3ODguOSA4NDMuMiA3OTcuNSA4MTIuNlE4MDYuMiA3ODIgODE0LjMgNzIzLjlRODIyLjUgNjY1LjkgODI4LjYgNTc1LjFaTTYxNS41IDY5NiA2OTguNCA2NjcuOVE3MTguNiA2OTguNiA3MzYuOCA3MzUuOVE3NTUuMSA3NzMuMSA3NjMgODAwLjFMNjc1LjIgODMyLjhRNjY4LjcgODA1LjYgNjUxLjYgNzY2LjdRNjM0LjUgNzI3LjggNjE1LjUgNjk2Wk0xNzMgNzIuNSAyODEuMSAzMFEzMDguNCA1OC43IDMzNi40IDk1LjdRMzY0LjUgMTMyLjggMzc5LjUgMTYxTDI2NC4yIDIwOC40UTI1Mi42IDE4MC42IDIyNi4xIDE0Mi4xUTE5OS42IDEwMy43IDE3MyA3Mi41Wk0zMTMuNiA3MjMuNSA0MTAuNiA3MTEuN1E0MjUgNzYwIDQzMi4zIDgxNy40UTQzOS41IDg3NC43IDQzOS41IDkxNi44TDMzNi40IDkzMC40UTMzOC4yIDkwMi44IDMzNS40IDg2N1EzMzIuNyA4MzEuMiAzMjcuNCA3OTMuN1EzMjIuMSA3NTYuMyAzMTMuNiA3MjMuNVpNNDY0LjYgNzE1IDU1Ni43IDY5NC4yUTU3NC44IDczNi42IDU4OS43IDc4NS45UTYwNC42IDgzNS4yIDYxMCA4NzEuNkw1MTMuNCA4OTYuMlE1MDguOSA4NTguOCA0OTQuOCA4MDguMVE0ODAuNyA3NTcuNCA0NjQuNiA3MTVaTTE4MC41IDY5MC40IDI4MC42IDcyMy40UTI3MC43IDc2Ni41IDI1Ni4zIDgxMC40UTI0MS45IDg1NC4zIDIyMS4xIDg5NC4yUTIwMC4yIDkzNC4xIDE3MC43IDk2NS42TDc4LjEgODk5LjlRMTAzLjYgODc0LjMgMTIzLjMgODQwLjNRMTQzLjEgODA2LjQgMTU3LjQgNzY3LjhRMTcxLjggNzI5LjIgMTgwLjUgNjkwLjRaTTQ4MiAyOS41IDYwNC42IDU4LjhRNTcxLjMgMTY2LjIgNTI0LjUgMjY4LjZRNDc3LjcgMzcxIDQxNC41IDQ2My4zUTM1MS4zIDU1NS41IDI2OC4xIDYzM1ExODQuOSA3MTAuNSA3OC44IDc2Ny40UTcyLjEgNzUyLjcgNjAuNiA3MzMuNFE0OSA3MTQgMzYuOSA2OTUuMlEyNC44IDY3Ni40IDE0IDY2My4zUTEwOS43IDYxNS40IDE4NS42IDU0NlEyNjEuNSA0NzYuNyAzMTguNiAzOTIuOFEzNzUuNyAzMDkgNDE2LjMgMjE2LjRRNDU3IDEyMy44IDQ4MiAyOS41Wk03MDAuMyAxOTMuMUg4MTAuOVE4MDAuMSAyNDguOSA3ODYuNyAzMDkuN1E3NzMuMiAzNzAuNSA3NjAuOSA0MTQuOEw2NTYuMiAzOTguNVE2NjggMzU2LjYgNjgwLjIgMzAwLjJRNjkyLjMgMjQzLjggNzAwLjMgMTkzLjFaTTc2NS4xIDM3Ny4xSDg3NS42UTg2NS42IDQzMi40IDg1Mi43IDQ5Mi4zUTgzOS43IDU1Mi4zIDgyNy40IDU5NUw3MjIuMyA1ODAuN1E3MzQuMSA1MzguNiA3NDYuMSA0ODIuOFE3NTguMSA0MjcgNzY1LjEgMzc3LjFaIi8+PC9nPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDY5IDEwMykgc2NhbGUoMC4wNjIpIj48cGF0aCBmaWxsPSIjRkZGRkZGIiBkPSJNMTYxLjkgNTMyLjRIODM2LjhWOTY0LjlINzE0LjJWNjMyLjRIMjc5Vjk2OC45SDE2MS45Wk0yNDAuOSA2ODkuNEg3NTcuMlY3NzYuM0gyNDAuOVpNODEuMyAxMDguMkg0NTguN1YxOTkuNkg4MS4zWk01MTYuMyAxMDguMkg5MTkuOFYxOTkuNkg1MTYuM1pNNDggMjU3SDQ3MS40VjM1MS41SDQ4Wk01MDIgMjU3SDk1M1YzNTEuNUg1MDJaTTIzOC42IDgzNi45SDc1NC44VjkzNi45SDIzOC42Wk0yMjMuNyAyOS43SDMzNy43VjE4OFEzMzcuNyAyMzQuNSAzMjguNiAyODUuOVEzMTkuNCAzMzcuMyAyOTQuOSAzODkuNlEyNzAuNCA0NDEuOSAyMjUuMSA0OTAuM1ExNzkuNyA1MzguNyAxMDcuMSA1NzguOVE5NS4zIDU2MC43IDcxLjcgNTM2LjZRNDguMiA1MTIuNiAyOC40IDQ5Ny43UTk1LjkgNDY1LjkgMTM1LjIgNDI2LjRRMTc0LjQgMzg2LjggMTkzLjIgMzQ0LjVRMjExLjkgMzAyLjIgMjE3LjggMjYxLjRRMjIzLjcgMjIwLjUgMjIzLjcgMTg2LjRaTTY1My45IDI5LjdINzY4LjdWMjA0LjFRNzY4LjcgMjQ4LjkgNzU5LjIgMjk2UTc0OS43IDM0My4xIDcyNC44IDM4OS4zUTY5OS45IDQzNS41IDY1NC45IDQ3Ny4zUTYxMCA1MTkuMSA1MzkuMSA1NTIuM1E1MjcuNSA1MzMuOCA1MDQuOCA1MDlRNDgyLjIgNDg0LjIgNDYzLjEgNDY5LjNRNTI3LjEgNDQzLjcgNTY1LjQgNDExLjJRNjAzLjcgMzc4LjYgNjIyLjkgMzQyLjhRNjQyLjEgMzA3IDY0OCAyNzAuNlE2NTMuOSAyMzQuMiA2NTMuOSAyMDIuNlpNNzcxLjkgMjczLjdRNzk5LjEgMzQxLjQgODUzLjIgMzk3LjZROTA3LjMgNDUzLjggOTc5LjEgNDgyLjdROTYwLjYgNDk4LjQgOTM4LjcgNTI0LjlROTE2LjggNTUxLjQgOTA0LjMgNTczUTgyNC43IDUzMy42IDc2Ny45IDQ2MS4xUTcxMS4yIDM4OC41IDY3OC41IDI5OS42Wk0yMjQuMiAzOTIuMiAyOTcuMiAzMjIuN1EzMjMuNyAzNDAuNCAzNTQuNyAzNjIuOVEzODUuNyAzODUuNSA0MTQuOCA0MDcuM1E0NDMuOCA0MjkuMSA0NjMgNDQ1LjRMMzg2LjEgNTI0LjVRMzY4LjQgNTA3LjMgMzQwLjYgNDg0LjFRMzEyLjcgNDYwLjkgMjgxLjcgNDM2LjZRMjUwLjcgNDEyLjQgMjI0LjIgMzkyLjJaIi8+PC9nPjwvc3ZnPg=="/>
+<text x="158" y="105" class="heavy" font-size="46">Kawase</text>
+<text x="1818" y="103" class="medium muted" font-size="24" text-anchor="end">Architecture / 01</text>
+<path d="M74 154 H1846" stroke="#D8D8D8" stroke-width="2"/>
+<text x="78" y="225" class="heavy" font-size="61">Under the hood</text>
+<text x="78" y="269" class="muted" font-size="27">One app. One agent turn. Arc and Circle at the core.</text>
+
+<!-- Connections: a single chat route, a single voice route, and one shared execution layer. -->
+<path class="line" d="M546 476 H710" marker-end="url(#arrow)"/>
+<rect x="555" y="425" width="159" height="36" rx="18" fill="#F5F5F5"/>
+<text x="635" y="450" class="medium" text-anchor="middle" font-size="21">Chat + screens</text>
+<path class="softline" d="M300 353 V313 Q300 301 312 301 H1461" marker-end="url(#arrowLight)"/>
+<rect x="886" y="281" width="236" height="39" rx="19" fill="#F5F5F5"/>
+<text x="1004" y="307" class="medium muted" text-anchor="middle" font-size="21">Voice · WebRTC audio</text>
+<path class="softline" d="M1655 370 V393" marker-end="url(#arrowLight)"/>
+<path class="line" d="M1392 530 H1259" marker-end="url(#arrow)"/>
+<rect x="1266" y="478" width="116" height="35" rx="17" fill="#F5F5F5"/>
+<text x="1324" y="503" class="medium" text-anchor="middle" font-size="21">Same turn</text>
+<path class="line" d="M983 652 V768" marker-end="url(#arrow)"/>
+<rect x="1003" y="688" width="235" height="42" rx="21" fill="#F5F5F5"/>
+<text x="1020" y="717" class="medium muted" font-size="21">State + execution</text>
+
+<!-- Input -->
+<rect x="76" y="353" width="470" height="299" rx="27" fill="#FFFFFF"/>
+<rect x="106" y="388" width="54" height="82" rx="10" fill="#ECECEC"/>
+<rect x="118" y="400" width="30" height="56" rx="3" fill="#FFFFFF"/>
+<rect x="176" y="400" width="92" height="66" rx="7" fill="#ECECEC"/>
+<rect x="184" y="407" width="76" height="48" rx="3" fill="#FFFFFF"/>
+<path d="M167 472 H277" stroke="#CCCCCC" stroke-width="5" stroke-linecap="round"/>
+<text x="106" y="546" class="heavy" font-size="51">One app</text>
+<text x="108" y="585" class="medium" font-size="27">iPhone · Android · Web · Mac</text>
+<text x="108" y="620" class="muted" font-size="23">Expo 57 + Tauri</text>
+
+<!-- Shared decision point -->
+<rect x="715" y="353" width="544" height="299" rx="27" fill="#111111"/>
+<rect x="715" y="353" width="13" height="299" rx="6" fill="#FA00FF"/>
+<text x="759" y="415" class="medium quiet" font-size="23">Hono on Node · apps/api</text>
+<text x="759" y="482" class="heavy white" font-size="56">Kawase API</text>
+<text x="759" y="530" class="white medium" font-size="31">One agent turn</text>
+<text x="759" y="570" class="quiet" font-size="24">For chat, voice, and automations</text>
+<rect x="759" y="594" width="112" height="39" rx="19" fill="#292929"/>
+<rect x="881" y="594" width="113" height="39" rx="19" fill="#292929"/>
+<rect x="1004" y="594" width="123" height="39" rx="19" fill="#292929"/>
+<text x="815" y="621" class="white medium" text-anchor="middle" font-size="20">Policy</text>
+<text x="937" y="621" class="white medium" text-anchor="middle" font-size="20">Intents</text>
+<text x="1065" y="621" class="white medium" text-anchor="middle" font-size="20">Runners</text>
+
+<!-- Voice transport and worker -->
+<rect x="1471" y="253" width="359" height="117" rx="23" fill="#ECECEC"/>
+<path d="M1508 312 Q1522 290 1536 312 M1516 319 Q1522 309 1528 319" fill="none" stroke="#111111" stroke-width="4" stroke-linecap="round"/>
+<text x="1561" y="306" class="heavy" font-size="30">LiveKit Cloud</text>
+<text x="1561" y="340" class="muted" font-size="21">Real-time audio</text>
+<rect x="1392" y="400" width="438" height="252" rx="27" fill="#FFFFFF"/>
+<path d="M1432 439 V462 M1445 430 V471 M1458 440 V461 M1471 434 V467" fill="none" stroke="#FA00FF" stroke-width="7" stroke-linecap="round"/>
+<text x="1430" y="535" class="heavy" font-size="43">Voice agent</text>
+<text x="1432" y="576" class="medium" font-size="25">LiveKit Agents · GPT-Live</text>
+<text x="1432" y="613" class="muted" font-size="23">Same tools. Same limits.</text>
+
+<!-- Foundation -->
+<text x="77" y="789" class="medium muted" font-size="24">Where the agent acts</text>
+<rect x="76" y="816" width="331" height="193" rx="25" fill="#FFFFFF"/>
+<text x="106" y="876" class="heavy" font-size="38">Postgres 17</text>
+<text x="108" y="923" class="muted" font-size="24">State · events · outbox</text>
+<path d="M107 961 H375" stroke="#E2E2E2" stroke-width="2"/>
+<text x="108" y="985" class="muted" font-size="19">The only store and bus</text>
+<rect x="426" y="816" width="331" height="193" rx="25" fill="#FFFFFF"/>
+<text x="456" y="876" class="heavy" font-size="39">Privy</text>
+<text x="456" y="923" class="muted" font-size="24">Sign-in · wallet keys</text>
+<path d="M456 961 H725" stroke="#E2E2E2" stroke-width="2"/>
+<text x="456" y="985" class="muted" font-size="19">User-controlled account</text>
+<rect x="776" y="816" width="472" height="193" rx="25" fill="#111111"/>
+<image x="810" y="849" width="71" height="71" xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0ibm9uZSIgdmlld0JveD0iMCAwIDI0IDI0Ij4KICAgIDxnIGNsaXAtcGF0aD0idXJsKCNhcmNfX2EpIj4KICAgICAgICA8cGF0aCBmaWxsPSJ1cmwoI2FyY19fYikiIGQ9Ik0yNCAwSDB2MjRoMjR6Ii8+CiAgICAgICAgPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTQuNSAxOS45OTljLjEzLTMuOTE3Ljc5NC03LjU3MiAxLjkwNC0xMC40MTVDNy44MSA1Ljk4NCA5Ljg0NSA0IDEyLjEzNCA0czQuMzI0IDEuOTgzIDUuNzMgNS41ODVjLjczMSAxLjg3MiAxLjI3IDQuMDk4IDEuNTg4IDYuNTJxLjA0Mi4zMjQuMDc4LjY1NC4wMTMuMDIxLjAxMS4wMzdzLjE4NyAxLjE3LjIyNyAzLjIwNGgtLjAyYy0uMjc5LS4yMjktMy41NTYtMi44MDQtOC45ODktMi4wNTguMDgyLS45Mi4xOTUtMS44MTQuMzQtMi42NzFsLjAyNC0uMTNhMjEuOCAyMS44IDAgMCAxIDUuNDI2LjUwOGwtLjAxNS0uMTAzYy0uMjk0LTEuODMtLjcyOC0zLjUwNi0xLjI4Ny00LjkzOS0uOTE1LTIuMzQyLTIuMTA4LTMuNzk3LTMuMTE0LTMuNzk3UzkuOTM0IDguMjY1IDkuMDIgMTAuNjA3YTIwIDIwIDAgMCAwLS42MDQgMS44MDggMjcgMjcgMCAwIDAtLjYzOCAyLjg1NkEzNiAzNiAwIDAgMCA3LjMxMSAyMEg0LjV6Ii8+CiAgICA8L2c+CiAgICA8ZGVmcz4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFyY19fYiIgeDE9IjEyIiB4Mj0iMTIiIHkxPSIwIiB5Mj0iMjQiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgICAgICAgPHN0b3Agc3RvcC1jb2xvcj0iIzE4MjY4MCIvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4NDJENTYiLz4KICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxjbGlwUGF0aCBpZD0iYXJjX19hIj4KICAgICAgICAgICAgPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMGgyNHYyNEgweiIvPgogICAgICAgIDwvY2xpcFBhdGg+CiAgICA8L2RlZnM+Cjwvc3ZnPgo="/>
+<text x="900" y="902" class="heavy white" font-size="52">Arc</text>
+<text x="810" y="949" class="white medium" font-size="25">USDC gas · settlement</text>
+<text x="810" y="985" class="quiet" font-size="21">Mainnet + testnet</text>
+<rect x="1267" y="816" width="563" height="193" rx="25" fill="#111111"/>
+<image x="1303" y="849" width="72" height="72" xlink:href="data:image/svg+xml;base64,PHN2ZyByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDBFNTk5IiBkPSJNMjAuNzg4IDMuODMyYy0uMTAxLS4xMDUtLjE5Ny0uMjEzLS4zMDEtLjMxNy0uMTAzLS4xMDMtLjIxMS0uMjAyLS4zMi0uMzAyQTExLjkwMyAxMS45MDMgMCAwIDAgMTIgMGExMS45MjYgMTEuOTI2IDAgMCAwLTguNDg2IDMuNTE0Qy0xLjA2MiA4LjA5LTEuMTYgMTUuNDcgMy4yMTMgMjAuMTY4Yy4wOTkuMTA4LjE5Ny4yMTQuMy4zMi4xMDQuMTAzLjIxLjIuMzE3LjNBMTEuOTIgMTEuOTIgMCAwIDAgMTIgMjRjMy4yMDYgMCA2LjIyLTEuMjQ3IDguNDg3LTMuNTEyIDQuNTc2LTQuNTc2IDQuNjczLTExLjk1Ni4zMDEtMTYuNjU2em0tMTYuNjU1LjMwMUExMS4wNTcgMTEuMDU3IDAgMCAxIDEyIC44NzRjMi44MjUgMCA1LjQ5IDEuMDQ4IDcuNTUgMi45NThsLTEuMDAxIDEuMDAyQTkuNjQ2IDkuNjQ2IDAgMCAwIDEyIDIuMjkyYTkuNjQ0IDkuNjQ0IDAgMCAwLTYuODY1IDIuODQ0QTkuNjQ0IDkuNjQ0IDAgMCAwIDIuMjkyIDEyYzAgMi40NDguOSA0Ljc1MyAyLjU0MiA2LjU0OUwzLjgzMSAxOS41NUMtLjIwMSAxNS4xOTEtLjEwMSA4LjM2NyA0LjEzMyA0LjEzM3ptMTMuNzk4IDEuMzE4di4wMDJsLTEuMDE1IDEuMDE0QTcuMzQ2IDcuMzQ2IDAgMCAwIDEyIDQuNTg5IDcuMzU3IDcuMzU3IDAgMCAwIDYuNzYxIDYuNzYgNy4zNjIgNy4zNjIgMCAwIDAgNC41ODkgMTJhNy4zNCA3LjM0IDAgMCAwIDEuODc3IDQuOTEzbC0xLjAxNCAxLjAxNkE4Ljc3IDguNzcgMCAwIDEgMy4xNjcgMTJhOC43NyA4Ljc3IDAgMCAxIDIuNTg4LTYuMjQ1QTguNzcxIDguNzcxIDAgMCAxIDEyIDMuMTY3YzIuMjEzIDAgNC4zMDEuODA5IDUuOTMxIDIuMjg0ek0xOC41MzcgMTJjMCAxLjc0NS0uNjgxIDMuMzg3LTEuOTE2IDQuNjIyUzEzLjc0NiAxOC41MzggMTIgMTguNTM4YTYuNDkxIDYuNDkxIDAgMCAxLTQuMjk2LTEuNjIxbC0uMDAxLS4wMDRjLS4xMS0uMDk0LS4yMi0uMTg4LS4zMjQtLjI5MWE2LjAyNyA2LjAyNyAwIDAgMS0uMjkzLS4zMjZBNi40NyA2LjQ3IDAgMCAxIDUuNDY2IDEyYzAtMS43NDYuNjc5LTMuMzg3IDEuOTE0LTQuNjIxQTYuNDg4IDYuNDg4IDAgMCAxIDEyIDUuNDY1YzEuNTk5IDAgMy4xMDUuNTc2IDQuMjk1IDEuNjIuMTExLjA5Ni4yMjQuMTkuMzI2LjI5NS4xMDQuMTA0LjIuMjE0LjI5NS4zMjRBNi40ODIgNi40ODIgMCAwIDEgMTguNTM3IDEyek03LjA4NCAxNy41MzRoLjAwMUE3LjM0OSA3LjM0OSAwIDAgMCAxMiAxOS40MTNhNy4zNSA3LjM1IDAgMCAwIDUuMjM5LTIuMTc0QTcuMzU0IDcuMzU0IDAgMCAwIDE5LjQxMiAxMmE3LjM2NCA3LjM2NCAwIDAgMC0xLjg3Ni00LjkxNmwxLjAxMy0xLjAxMkE4Ljc3NyA4Ljc3NyAwIDAgMSAyMC44MzQgMTJhOC43NjUgOC43NjUgMCAwIDEtMi41ODkgNi4yNDZBOC43NjQgOC43NjQgMCAwIDEgMTIgMjAuODM0YTguNzgyIDguNzgyIDAgMCAxLTUuOTMtMi4yODVsMS4wMTQtMS4wMTV6bTEyLjc4MyAyLjMzM0ExMS4wNDYgMTEuMDQ2IDAgMCAxIDEyIDIzLjEyNWExMS4wNDIgMTEuMDQyIDAgMCAxLTcuNTUxLTIuOTU3bDEuMDA0LTEuMDAxYTkuNjQgOS42NCAwIDAgMCA2LjU0OSAyLjU0MiA5LjYzOSA5LjYzOSAwIDAgMCA2Ljg2NS0yLjg0NkE5LjY0MiA5LjY0MiAwIDAgMCAyMS43MSAxMmE5LjY0IDkuNjQgMCAwIDAtMi41NDMtNi41NDhsMS4wMDEtMS4wMDJjNC4wMzEgNC4zNTkgMy45MzUgMTEuMTgyLS4zMDEgMTUuNDE3eiIvPjwvc3ZnPg=="/>
+<text x="1394" y="902" class="heavy white" font-size="52">Circle</text>
+<text x="1303" y="949" class="white medium" font-size="24">App Kit · CCTP · Wallets</text>
+<text x="1303" y="985" class="quiet" font-size="21">Gateway · Onramp · Faucet</text>
+<text x="1845" y="1053" text-anchor="end" class="muted" font-size="18">Kawase · technical overview</text>
+</svg>

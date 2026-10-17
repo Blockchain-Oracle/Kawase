@@ -6,19 +6,7 @@ sourceHash: 624b9a9a0d3ea30a
 
 ## 整体结构
 
-```text
- iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
-        │  聊天（SSE）、界面                    │ 音频
-        ▼                                          ▼
- ┌──────────────────────────────┐        ┌───────────────────────┐
- │ apps/api — Node 上的 Hono    │◀──────▶│ apps/voice-agent      │
- │  代理回合（AI SDK 7）         │  回合  │  LiveKit Agents worker │
- │  策略 · 意图 · 执行器         │        │  STT → 回合 → TTS      │
- └──────┬───────────┬───────────┘        └───────────────────────┘
-        │           │
-        ▼           ▼
-   Postgres     Arc（主网 / 测试网） · Circle（App Kit、CCTP、钱包、水龙头） · Privy
-```
+[![Kawase architecture diagram: one app feeds a shared agent turn, voice runs through LiveKit, and the API connects to Postgres, Privy, Arc, and Circle](/media/architecture/architecture.png)](/media/architecture/architecture.png)
 
 ## 一个大脑
 

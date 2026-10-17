@@ -6,19 +6,7 @@ sourceHash: 624b9a9a0d3ea30a
 
 ## ساخت
 
-```text
- iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
-        │  چیٹ (SSE)، اسکرینیں                    │ آڈیو
-        ▼                                          ▼
- ┌──────────────────────────────┐        ┌───────────────────────┐
- │ apps/api — Hono on Node      │◀──────▶│ apps/voice-agent      │
- │  ایجنٹ ٹرن (AI SDK 7)         │  ٹرن   │  LiveKit Agents worker │
- │  پالیسی · ارادے · رنرز       │        │  STT → ٹرن → TTS       │
- └──────┬───────────┬───────────┘        └───────────────────────┘
-        │           │
-        ▼           ▼
-   Postgres     Arc (مین نیٹ / ٹیسٹ نیٹ) · Circle (App Kit، CCTP، والیٹس، فاسٹ) · Privy
-```
+[![Kawase architecture diagram: one app feeds a shared agent turn, voice runs through LiveKit, and the API connects to Postgres, Privy, Arc, and Circle](/media/architecture/architecture.png)](/media/architecture/architecture.png)
 
 ## ایک دماغ
 

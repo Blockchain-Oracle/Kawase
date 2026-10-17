@@ -6,20 +6,7 @@ sourceHash: 624b9a9a0d3ea30a
 
 ## Общая схема
 
-```text
- iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
-        │  чат (SSE), экраны                      │ аудио
-        ▼                                          ▼
- ┌──────────────────────────────┐        ┌───────────────────────┐
- │ apps/api — Hono на Node      │◀──────▶│ apps/voice-agent      │
- │  ход агента (AI SDK 7)       │  ход   │  воркер LiveKit Agents │
- │  политики · намерения ·      │        │  STT → ход → TTS       │
- │  исполнители                 │        │                       │
- └──────┬───────────┬───────────┘        └───────────────────────┘
-        │           │
-        ▼           ▼
-   Postgres     Arc (Основная сеть / Тестовая сеть) · Circle (App Kit, CCTP, кошельки, кран) · Privy
-```
+[![Kawase architecture diagram: one app feeds a shared agent turn, voice runs through LiveKit, and the API connects to Postgres, Privy, Arc, and Circle](/media/architecture/architecture.png)](/media/architecture/architecture.png)
 
 ## Единый мозг
 

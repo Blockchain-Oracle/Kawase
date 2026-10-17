@@ -6,19 +6,7 @@ sourceHash: 624b9a9a0d3ea30a
 
 ## কাঠামো
 
-```text
- iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
-        │  চ্যাট (SSE), স্ক্রিন                    │ অডিও
-        ▼                                          ▼
- ┌──────────────────────────────┐        ┌───────────────────────┐
- │ apps/api — Hono on Node      │◀──────▶│ apps/voice-agent      │
- │  এজেন্ট টার্ন (AI SDK 7)      │  টার্ন  │  LiveKit Agents worker │
- │  পলিসি · ইন্টেন্ট · রানার     │        │  STT → টার্ন → TTS      │
- └──────┬───────────┬───────────┘        └───────────────────────┘
-        │           │
-        ▼           ▼
-   Postgres     Arc (মেইননেট / টেস্টনেট) · Circle (App Kit, CCTP, ওয়ালেট, ফসেট) · Privy
-```
+[![Kawase architecture diagram: one app feeds a shared agent turn, voice runs through LiveKit, and the API connects to Postgres, Privy, Arc, and Circle](/media/architecture/architecture.png)](/media/architecture/architecture.png)
 
 ## একটি ব্রেন
 

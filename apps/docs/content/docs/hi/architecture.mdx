@@ -6,19 +6,7 @@ sourceHash: 624b9a9a0d3ea30a
 
 ## ढांचा
 
-```text
- iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
-        │  चैट (SSE), स्क्रीन                    │ ऑडियो
-        ▼                                          ▼
- ┌──────────────────────────────┐        ┌───────────────────────┐
- │ apps/api — Node पर Hono      │◀──────▶│ apps/voice-agent      │
- │  एजेंट टर्न (AI SDK 7)       │  टर्न  │  LiveKit Agents वर्कर  │
- │  पॉलिसी · इंटेंट · रनर       │        │  STT → टर्न → TTS      │
- └──────┬───────────┬───────────┘        └───────────────────────┘
-        │           │
-        ▼           ▼
-   Postgres     Arc (मेननेट / टेस्टनेट) · Circle (App Kit, CCTP, वॉलेट, फॉसेट) · Privy
-```
+[![Kawase architecture diagram: one app feeds a shared agent turn, voice runs through LiveKit, and the API connects to Postgres, Privy, Arc, and Circle](/media/architecture/architecture.png)](/media/architecture/architecture.png)
 
 ## एक ब्रेन
 

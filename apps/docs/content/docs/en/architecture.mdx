@@ -5,19 +5,7 @@ description: How Kawase is built — one agent brain for chat and voice, a pure 
 
 ## The shape
 
-```text
- iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
-        │  chat (SSE), screens                    │ audio
-        ▼                                          ▼
- ┌──────────────────────────────┐        ┌───────────────────────┐
- │ apps/api — Hono on Node      │◀──────▶│ apps/voice-agent      │
- │  agent turn (AI SDK 7)       │  turn  │  LiveKit Agents worker │
- │  policy · intents · runners  │        │  STT → turn → TTS      │
- └──────┬───────────┬───────────┘        └───────────────────────┘
-        │           │
-        ▼           ▼
-   Postgres     Arc (mainnet / testnet) · Circle (App Kit, CCTP, wallets, faucet) · Privy
-```
+[![Kawase architecture diagram: one app feeds a shared agent turn, voice runs through LiveKit, and the API connects to Postgres, Privy, Arc, and Circle](/media/architecture/architecture.png)](/media/architecture/architecture.png)
 
 ## One brain
 
