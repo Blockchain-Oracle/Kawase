@@ -39,6 +39,10 @@ refs/*/
 !/context/07-prior-work/
 /docs/design/
 /docs/demo/
+# Launch material (the demo and promo videos, the X campaign, profile art) and the film's handoff and post copy
+/docs/marketing/
+/marketing/flyover/HANDOFF.md
+/marketing/flyover/X-POST.md
 /deploy/coolify.md
 /.21st/
 /.claude/
