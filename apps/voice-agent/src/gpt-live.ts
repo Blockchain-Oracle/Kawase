@@ -30,8 +30,10 @@ const CHAT_TOPIC = "lk.chat";
 const CONNECT = { maxRetry: 2, retryIntervalMs: 1000, timeoutMs: 10_000 };
 /** Controlled delivery experiment; the underlying agent, model, voice and prompts stay the same. */
 const PROGRESSIVE = process.env.KAWASE_VOICE_PROGRESSIVE === "1";
-/** Isolated voice-layer prompt and spoken-estimate experiment. */
+/** Isolated voice-layer prompt and spoken-estimate experiment (the api reads the same flag for the agent's voice lines). */
 const CONVERSATIONAL = process.env.KAWASE_VOICE_CONVERSATIONAL === "1";
+/** Timing markers for test/voice-e2e.ts: it decodes the microphone a second time, so it stays off outside tests. */
+const TRACE = process.env.KAWASE_VOICE_TRACE === "1";
 const TRACE_AUDIO_SAMPLE_RATE = 16_000;
 const TRACE_VOICE_THRESHOLD = 600;
 const TRACE_SILENCE_SAMPLES = 8_000;
@@ -181,7 +183,7 @@ export async function startGptLive(input: {
     const segments = new Map<string, string>();
     let speaking = false;
     let delegationOpen = false;
-    const speechTrace = CONVERSATIONAL ? traceTurn(ctx.room, meta, "input-speech") : undefined;
+    const speechTrace = TRACE ? traceTurn(ctx.room, meta, "input-speech") : undefined;
     // Test-only marker from actual microphone frames. The SDK's input_speech_started event is emitted
     // on the first transcript delta, so it cannot measure when microphone audio first arrived.
     if (speechTrace) {
@@ -257,7 +259,7 @@ export async function startGptLive(input: {
         return;
       }
       try {
-        const trace = CONVERSATIONAL ? traceTurn(ctx.room, meta, key) : undefined;
+        const trace = TRACE ? traceTurn(ctx.room, meta, key) : undefined;
         let firstText = false;
         let progressSent = false;
         let progressLine: string | undefined;
@@ -274,6 +276,8 @@ export async function startGptLive(input: {
             if (!CONVERSATIONAL)
               live.appendThinking(clip(`Provisional route result from the card: ${progress} The final trade quote is still pending.`), options);
             live.appendCommentary(clip(progress), options);
+            // The early estimate is checked like the final answer: a misheard amount gets the same spoken correction.
+            guard.expect(progress, "");
             trace?.("progress_commentary_sent");
           },
           onText: () => {
@@ -343,11 +347,10 @@ export async function startGptLive(input: {
       void answer(async () => (await reader.readAll()).trim(), `gpt-live:text:${typed}:${Date.now()}`);
     });
 
+    // Settings → Voice "Kawase speaks first" (on by default): a silent room gives the person no cue to start talking.
     if (prefs.autoSpeak)
       session.generateReply({
-        instructions: CONVERSATIONAL
-          ? `Start a friendly conversation in ${LANGUAGE_IN_ENGLISH[locale]}. Greet the person and ask an easy, open-ended question about how they are or what they would like to talk about. Keep it natural and brief; vary the wording. Do not assume their name, use the stock line 'I'm listening', or say you are checking anything.`
-          : `Greet the person in one short, warm sentence in ${LANGUAGE_IN_ENGLISH[locale]} and say you're listening.`,
+        instructions: `Start a friendly conversation in ${LANGUAGE_IN_ENGLISH[locale]}. Greet the person and ask an easy, open-ended question about how they are or what they would like to talk about. Keep it natural and brief; vary the wording. Do not assume their name, use the stock line 'I'm listening', or say you are checking anything.`,
       });
     console.info(`voice: GPT-Live started (${locale}, ${prefs.voice}, session ${live.sessionId})`);
     return {

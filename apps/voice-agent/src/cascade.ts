@@ -126,9 +126,11 @@ export async function startCascade(input: {
   meta: SessionMeta;
   locale: SupportedLocale;
   prefs: VoicePrefs;
+  /** Say hello first (Settings → Voice), unless GPT-Live already did before handing over. */
+  greet: boolean;
   sendCard: (card: Card) => void;
 }): Promise<VoiceEngine> {
-  const { ctx, meta, locale, prefs, sendCard } = input;
+  const { ctx, meta, locale, prefs, greet, sendCard } = input;
   const speech = VOICE_SPEECH[locale];
   const speed = VOICE_SPEEDS[prefs.speed];
   const elevenKey = required("ELEVENLABS_API_KEY");
@@ -170,7 +172,7 @@ export async function startCascade(input: {
   });
   // Disable LiveKit SDK recording uploads. Speech-provider retention is a separate, still-open dependency.
   await session.start({ agent: new KawaseAgent(turnRelay(meta, locale, sendCard)), room: ctx.room, record: false });
-  if (prefs.autoSpeak) session.say(GREETING[locale]);
+  if (greet) session.say(GREETING[locale]);
   console.info(`voice: fallback pipeline started (${locale}, ${speech.tts.provider})`);
   return {
     stop: async () => {

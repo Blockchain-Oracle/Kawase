@@ -4,6 +4,8 @@
 // and speaks the answer back: we measure the time from the end of our speech to the first sound of the answer, and
 // read the same thread over the api to see the spoken turn in the transcript. Needs the local api (PORT 3023) and the
 // worker (`pnpm --filter @kawase/voice-agent dev`) running. Run: pnpm --filter @kawase/voice-agent e2e
+// A worker started with KAWASE_VOICE_TRACE=1 also sends timing markers, and the run then checks that the answer itself
+// was heard after Kawase's turn finished; KAWASE_E2E_FOLLOWUP="…" (interrupting the answer) needs those markers.
 import { config } from "dotenv";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -162,9 +164,15 @@ speechEnded = performance.now();
 let answeredAt: number | undefined;
 let secondAnsweredAt: number | undefined;
 let lastPoll = 0;
+// A traced worker's first marker comes as Kawase's turn starts, well before its answer reaches the thread.
+const traced = () => markers.some((marker) => marker.event === "agent_request_started");
+const answerHeard = () =>
+  firstLoudAfter !== undefined &&
+  (!traced() || (firstPostCompletionAudio !== undefined && markers.some((marker) => marker.event === "agent_response_complete")));
 const deadline = speechEnded + (FOLLOWUP ? 75_000 : 45_000);
 while (performance.now() < deadline) {
   await silence(100);
+  if (FOLLOWUP && answeredAt !== undefined && !traced()) throw new Error("the follow-up run needs the worker started with KAWASE_VOICE_TRACE=1");
   if (followupPcm && firstPostCompletionAudio !== undefined && followupSpeechEnded === undefined && performance.now() - firstPostCompletionAudio > 250) {
     console.log("interrupting the first answer with the follow-up");
     await source.waitForPlayout();
@@ -180,9 +188,10 @@ while (performance.now() < deadline) {
     if (count >= 1 && answeredAt === undefined) answeredAt = performance.now();
     if (count >= 2 && secondAnsweredAt === undefined) secondAnsweredAt = performance.now();
   }
-  const firstDone = answeredAt !== undefined && firstLoudAfter !== undefined && firstPostCompletionAudio !== undefined && markers.some((marker) => marker.event === "agent_response_complete");
+  const firstDone = answeredAt !== undefined && answerHeard();
   const secondRequest = markers.find((marker) => marker.event === "agent_request_started" && followupSpeechEnded !== undefined && marker.receivedAtMs >= followupSpeechEnded);
-  const directSecondAnswer = followupSpeechEnded !== undefined && transcriptions.some((item) => item.speaker.startsWith("agent-") && item.receivedAtMs >= followupSpeechEnded);
+  const followupEnded = followupSpeechEnded;
+  const directSecondAnswer = followupEnded !== undefined && transcriptions.some((item) => item.speaker.startsWith("agent-") && item.receivedAtMs >= followupEnded);
   const secondDone = followupSpeechEnded !== undefined && (secondAnsweredAt !== undefined && markers.some((marker) => marker.turnId === secondRequest?.turnId && marker.event === "agent_response_complete") || directSecondAnswer) && secondAudioOnset !== undefined;
   if (firstDone && (!FOLLOWUP || secondDone) && performance.now() - lastLoud > 2500) break;
 }
@@ -205,7 +214,7 @@ console.log("voice trace", JSON.stringify({
   ],
 }));
 console.log(firstLoudAfter ? `first audible frame received ${Math.round(firstLoudAfter - speechEnded)} ms after the question ended (may be an acknowledgement)` : "no answer audio received");
-console.log(firstPostCompletionAudio ? `first audio onset after the completed-answer marker ${Math.round(firstPostCompletionAudio - speechEnded)} ms after the question ended (useful-answer proxy)` : "no post-completion answer audio received");
+console.log(firstPostCompletionAudio ? `first audio onset after the completed-answer marker ${Math.round(firstPostCompletionAudio - speechEnded)} ms after the question ended (useful-answer proxy)` : traced() ? "no post-completion answer audio received" : "worker not traced (KAWASE_VOICE_TRACE=1): answer timing unmeasured");
 if (progressReceivedAt !== undefined) console.log(firstProgressAudio ? `first audio onset after the progress marker ${Math.round(firstProgressAudio - speechEnded)} ms after the question ended (progress-audio proxy)` : "no progress audio onset detected");
 console.log(answeredAt ? `Kawase's answer in the thread ${Math.round(answeredAt - speechEnded)} ms after the question ended` : "no answer in the thread");
 console.log("cards", cards.map((card) => (card as { toolName: string }).toolName));
@@ -243,4 +252,4 @@ const thread = await readThread();
 for (const message of thread.messages ?? []) console.log(`  ${message.role}:`, message.parts.filter((part) => part.type === "text").map((part) => part.text).join(" "));
 await room.disconnect();
 const directSecondAnswer = followupSpeechEnded !== undefined && transcriptions.some((item) => item.speaker.startsWith("agent-") && item.receivedAtMs >= followupSpeechEnded);
-process.exit(firstLoudAfter && firstPostCompletionAudio && answeredAt && turnMarkers.some((marker) => marker.event === "agent_response_complete") && (!FOLLOWUP || (followupSpeechEnded && secondAudioOnset && (secondAnsweredAt || directSecondAnswer))) ? 0 : 1);
+process.exit(answeredAt && answerHeard() && (!traced() || turnMarkers.some((marker) => marker.event === "agent_response_complete")) && (!FOLLOWUP || (followupSpeechEnded && secondAudioOnset && (secondAnsweredAt || directSecondAnswer))) ? 0 : 1);

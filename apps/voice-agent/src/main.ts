@@ -90,8 +90,10 @@ export default defineAgent({
       if (fellBack) return;
       fellBack = true;
       console.warn("voice: switching to the fallback pipeline", reason);
+      // GPT-Live already said hello when it was running: the pipeline takes over without greeting again mid-conversation.
+      const greet = prefs.autoSpeak && active === undefined;
       await active?.close().catch(() => undefined);
-      active = await startCascade({ ctx, meta, locale, prefs, sendCard });
+      active = await startCascade({ ctx, meta, locale, prefs, greet, sendCard });
     };
 
     ctx.room.localParticipant?.registerRpcMethod(VOICE_STOP_RPC, async (data) => {
@@ -101,7 +103,7 @@ export default defineAgent({
     });
 
     if (ENGINE === "cascade") {
-      active = await startCascade({ ctx, meta, locale, prefs, sendCard });
+      active = await startCascade({ ctx, meta, locale, prefs, greet: prefs.autoSpeak, sendCard });
       return;
     }
     // GPT-Live keeps time by the person's audio and can't answer typed requests without it (a browser that denied the
@@ -109,11 +111,14 @@ export default defineAgent({
     // text and speaks with the chosen TTS voice.
     if (!(await microphoneWithin(ctx, meta.identity, MIC_WAIT_MS))) {
       console.info("voice: no live microphone, starting on the pipeline");
-      active = await startCascade({ ctx, meta, locale, prefs, sendCard });
+      active = await startCascade({ ctx, meta, locale, prefs, greet: prefs.autoSpeak, sendCard });
       return;
     }
     try {
-      active = await startGptLive({ ctx, meta, locale, prefs, sendCard, onFatal: (reason) => void fallBack(reason) });
+      const live = await startGptLive({ ctx, meta, locale, prefs, sendCard, onFatal: (reason) => void fallBack(reason) });
+      // A fatal error while GPT-Live was starting already handed the room to the pipeline: close the dead session.
+      if (fellBack) await live.close().catch(() => undefined);
+      else active = live;
     } catch (error) {
       await fallBack(error);
     }
