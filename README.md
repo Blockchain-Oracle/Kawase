@@ -206,8 +206,10 @@ transactions ([`apps/api/test`](apps/api/test), `*-testnet.test.ts`), all passin
 
 **Mainnet:** the api and the app are live on Arc mainnet (consent, setup, the weekly budget, live markets, the x402
 catalog, Long / Short on Aave V4). Kawase's mainnet relayer and agent ops wallet are funded, and `/health` reports each
-network's relayer gas. **No real money has moved through Kawase on mainnet yet**; the swap, margin and bridge paths
-there are built against mainnet contracts and live quotes.
+network's relayer gas. As of 2026-10-17, the [public production counters](https://api.getkawase.xyz/public/stats)
+record one completed mainnet swap and one completed mainnet earn action. These are on-chain completions, not evidence
+of independent users; paying users and repeat use are still unvalidated. The margin and bridge paths are built against
+mainnet contracts and live quotes.
 
 **Not yet:** swaps that run unattended (every swap or DCA buy waits for your tap), limit orders, refunds from x402
 sellers (x402 has no refund standard), Aave V4 and margin on testnet, voice inside the desktop app, passkeys as the
@@ -291,6 +293,19 @@ money: `pnpm --filter @kawase/api test`. The delegation package proves the on-ch
 | [`packages/networks`](packages/networks), [`packages/money`](packages/money) | the two Arc networks and verified addresses; exact money types                                                               |
 | [`plan/`](plan), [`context/`](context)                                       | dated architecture and build logs, product cards, the Arc notes behind the agent's knowledge, and prior-work provenance    |
 
+### Reuse the pieces
+
+You can lift these without adopting Kawase's UI or agent:
+
+| Start here | What you get |
+| --- | --- |
+| [`packages/intents`](packages/intents/src/index.ts) and [`packages/policy`](packages/policy/src/index.ts) | Versioned, hashed action drafts and a pure policy check that says whether to refuse, ask for more information, use a narrow allowance or request a fresh signature. Supply your own facts and keep the check at draft, approval and execution time. |
+| [`packages/integrations/delegation`](packages/integrations/delegation/src/index.ts) and [`packages/wallet`](packages/wallet/src/index.ts) | EIP-7702 setup, ERC-7710 grants with token, amount, recipient and expiry limits, exact-call batches, redemption and revocation. The user signs a bounded grant; the agent never receives the user's key. |
+| [`apps/api/src/bridge/compare.ts`](apps/api/src/bridge/compare.ts), [`apps/api/src/swap/venues.ts`](apps/api/src/swap/venues.ts) and [`packages/integrations`](packages/integrations) | Quote adapters and route ranking by what arrives after fees across Circle App Kit/CCTP, KyberSwap and other rails. The API code shows how the quotes become one approval card and a tracked receipt. |
+
+The [local setup](#run-it-locally) uses Arc testnet. Start with the pure policy and intent packages if you want to reuse
+the decision flow without setting up Circle, Privy or a relayer.
+
 ## Prior work and what was reused
 
 The event opened on **2026-09-27**. This is where Kawase started.
@@ -319,3 +334,8 @@ The event opened on **2026-09-27**. This is where Kawase started.
   Circle's App Kit and SDKs, viem, LiveKit Agents, Expo, Hono, Drizzle and Fumadocs.
 - **How it was built:** by Abubakr Jimoh with AI coding agents (Claude Code; OpenAI Codex until 2026-10-02). The architecture, the product
   cards and the build logs are in [`plan/`](plan).
+
+## License
+
+Kawase's original code is [MIT licensed](LICENSE). Third-party components, starter code and logos retain their own
+licenses and credits as noted above and in their source files.
