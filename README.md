@@ -12,6 +12,8 @@
   &nbsp;·&nbsp;
   <a href="https://getkawase.xyz/demo"><b>Demo</b></a>
   &nbsp;·&nbsp;
+  <a href="https://youtu.be/qoK2132gYN0"><b>Demo video</b></a>
+  &nbsp;·&nbsp;
   <a href="https://getkawase.xyz/demo#evidence"><b>On-chain evidence</b></a>
   &nbsp;·&nbsp;
   <a href="https://getkawase.xyz/live"><b>Live counts</b></a>
@@ -72,9 +74,10 @@ paid or repeat use.
   </a>
 </p>
 
-The recording is coming to [getkawase.xyz/demo](https://getkawase.xyz/demo). The cover is an editorial composition
-built on a live app capture (2026-10-15); it is not a recording or a transaction receipt. Until the video is up, the
-same page lists every testnet transaction behind the claims below, each opening on its explorer.
+Watch the demo on YouTube: **[youtu.be/qoK2132gYN0](https://youtu.be/qoK2132gYN0)**.
+[getkawase.xyz/demo](https://getkawase.xyz/demo) plays the same video above every testnet transaction behind the claims
+below, each opening on its explorer. The cover is an editorial composition built on a live app capture (2026-10-15),
+not a frame of the video.
 
 ## Try it
 

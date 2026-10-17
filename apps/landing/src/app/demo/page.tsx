@@ -1,4 +1,4 @@
-// The demo and its evidence: the video (once it is published) and every real testnet transaction behind the claims,
+// The demo and its evidence: the video (on YouTube, played here) and every real testnet transaction behind the claims,
 // each opening on its explorer. Rows come from src/data/evidence.ts, copied in full from the build logs.
 import type { Metadata } from "next";
 import { ExternalLink } from "lucide-react";
@@ -55,13 +55,28 @@ function Video() {
   const id = url ? youTubeId(url) : null;
   if (url && id) {
     return (
-      <iframe
-        className="aspect-video w-full rounded-3xl border border-border bg-card"
-        src={`https://www.youtube-nocookie.com/embed/${id}`}
-        title="The Kawase demo"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
+      <figure className="flex flex-col gap-3">
+        {/* YouTube refuses an embed that arrives without a referrer (error 153), so the page's origin is always sent. */}
+        <iframe
+          className="aspect-video w-full rounded-3xl border border-border bg-card"
+          src={`https://www.youtube-nocookie.com/embed/${id}`}
+          title="The Kawase demo"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+        />
+        <figcaption className="text-center text-sm text-muted-foreground">
+          <a
+            href={`https://www.youtube.com/watch?v=${id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Watch on YouTube
+            <ExternalLink className="size-3.5" aria-hidden />
+          </a>
+        </figcaption>
+      </figure>
     );
   }
   if (url) {

@@ -21,6 +21,8 @@ export const PUBLIC_LINKS = {
   testFlight: "https://testflight.apple.com/join/PD3fgXZx" as string | null,
   /** The Tauri desktop app for Apple-silicon Macs (apps/desktop), served by the landing from public/download. */
   desktopMac: "https://getkawase.xyz/download/Kawase-mac.dmg",
+  /** The demo video on YouTube (published 2026-10-17); getkawase.xyz/demo plays it above the on-chain evidence. */
+  demoVideo: "https://youtu.be/qoK2132gYN0",
 } as const;
 
 /**

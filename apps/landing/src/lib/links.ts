@@ -12,7 +12,7 @@ export const links = {
   /** The desktop preview for Apple-silicon Macs (not notarized yet; every surface says so next to the link). */
   desktopMac: PUBLIC_LINKS.desktopMac,
   testFlight: process.env.NEXT_PUBLIC_TESTFLIGHT_URL ?? PUBLIC_LINKS.testFlight,
-  demoVideo: process.env.NEXT_PUBLIC_DEMO_VIDEO_URL ?? null,
+  demoVideo: process.env.NEXT_PUBLIC_DEMO_VIDEO_URL ?? PUBLIC_LINKS.demoVideo,
   /** Server-side only: where /live reads the public counts. */
   api: process.env.KAWASE_API_URL ?? PUBLIC_LINKS.api,
 } as const;
