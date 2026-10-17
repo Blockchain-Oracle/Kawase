@@ -350,7 +350,9 @@ export async function startGptLive(input: {
     // Settings → Voice "Kawase speaks first" (on by default): a silent room gives the person no cue to start talking.
     if (prefs.autoSpeak)
       session.generateReply({
-        instructions: `Start a friendly conversation in ${LANGUAGE_IN_ENGLISH[locale]}. Greet the person and ask an easy, open-ended question about how they are or what they would like to talk about. Keep it natural and brief; vary the wording. Do not assume their name, use the stock line 'I'm listening', or say you are checking anything.`,
+        // The plugin adds "After that, pause and listen" to this; on the production persona GPT-Live then said "I'm here
+        // and listening" twice in a row (10-17), so the ask is concrete: one question, with examples, and the ban apart.
+        instructions: `Open the conversation in ${LANGUAGE_IN_ENGLISH[locale]} with one short, friendly sentence that ends in a question inviting the person to talk, like "Hey! How's it going today?" or "Hi! What would you like to do today?" (vary the wording). End on the question. Never say that you are listening or that you are here. Don't use their name.`,
       });
     console.info(`voice: GPT-Live started (${locale}, ${prefs.voice}, session ${live.sessionId})`);
     return {
