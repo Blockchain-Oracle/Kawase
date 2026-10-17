@@ -1,7 +1,7 @@
 // What the worker itself says, per language (everything else is Kawase's agent, in the person's language).
 import type { SupportedLocale } from "@kawase/config";
 
-/** The first thing the person hears in the fallback pipeline, in their language: the session is live. */
+/** The first thing the person hears, in their language, on either engine (GPT-Live says it in its own voice): a question that invites them to talk. */
 export const GREETING: Record<SupportedLocale, string> = {
   en: "Hey! How's it going today?",
   es: "¡Hola! ¿Cómo te va hoy?",

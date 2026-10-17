@@ -22,7 +22,7 @@ import { routeProgress } from "./progress";
 import { canonicalFacts, factsOf, readbackProblems, type Facts } from "./readback";
 import { traceTurn } from "./trace";
 import { runTurn, type Card, type SessionMeta } from "./turn";
-import { LANGUAGE_IN_ENGLISH, SORRY } from "./words";
+import { GREETING, LANGUAGE_IN_ENGLISH, SORRY } from "./words";
 
 const READY_POLL_MS = 100;
 /** What the app sends when the person taps a suggestion or types inside voice mode (LiveKit's chat topic). */
@@ -350,9 +350,9 @@ export async function startGptLive(input: {
     // Settings → Voice "Kawase speaks first" (on by default): a silent room gives the person no cue to start talking.
     if (prefs.autoSpeak)
       session.generateReply({
-        // The plugin adds "After that, pause and listen" to this; on the production persona GPT-Live then said "I'm here
-        // and listening" twice in a row (10-17), so the ask is concrete: one question, with examples, and the ban apart.
-        instructions: `Open the conversation in ${LANGUAGE_IN_ENGLISH[locale]} with one short, friendly sentence that ends in a question inviting the person to talk, like "Hey! How's it going today?" or "Hi! What would you like to do today?" (vary the wording). End on the question. Never say that you are listening or that you are here. Don't use their name.`,
+        // GPT-Live improvised on any open ask ("I'm here and listening", three production sessions on 10-17, even when
+        // told not to), so it says the pipeline's own greeting, a friendly question in the person's language, in its voice.
+        instructions: `Say this greeting once, warmly and naturally, then stop and let the person answer: "${GREETING[locale]}"`,
       });
     console.info(`voice: GPT-Live started (${locale}, ${prefs.voice}, session ${live.sessionId})`);
     return {
