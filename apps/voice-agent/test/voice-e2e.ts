@@ -119,8 +119,8 @@ await room.localParticipant!.publishTrack(track, options);
 const silence = async (ms: number) => {
   for (let t = 0; t < ms; t += 10) await source.captureFrame(new AudioFrame(new Int16Array(FRAME_SAMPLES), SAMPLE_RATE, 1, FRAME_SAMPLES));
 };
-// The greeting: wait for it to start and to finish (1.5 s of quiet). The conversational
-// experiment suppresses the automatic greeting, so wait for the worker to join instead.
+// The greeting: wait for it to start and to finish (1.5 s of quiet). The skip option
+// remains useful for test sessions that explicitly disable automatic greetings.
 const joined = performance.now();
 if (process.env.KAWASE_E2E_SKIP_GREETING === "1") {
   while (performance.now() - joined < GREETING_WAIT_MS && room.remoteParticipants.size === 0) await silence(100);
@@ -130,6 +130,7 @@ if (process.env.KAWASE_E2E_SKIP_GREETING === "1") {
 } else {
   while (performance.now() - joined < GREETING_WAIT_MS && (lastLoud === 0 || performance.now() - lastLoud < 1500)) await silence(100);
   console.log(lastLoud ? `greeting heard ${Math.round(lastLoud - joined)} ms after joining` : "no greeting heard");
+  console.log("greeting transcript", JSON.stringify(transcriptions.filter((item) => item.speaker.startsWith("agent-"))));
 }
 await source.waitForPlayout();
 

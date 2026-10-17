@@ -59,7 +59,7 @@ export function persona(locale: SupportedLocale, prefs: VoicePrefs): string {
     `Speak ${language} (the person's app language). If the person speaks another language, answer in theirs.`,
     PACE[prefs.speed],
     ...(CONVERSATIONAL
-      ? ["A delegated request is silent until client commentary arrives. Do not speak before its result: no greeting, 'sure', 'okay', 'good question', promise to answer, or progress claim. Silence during the handoff is expected. When commentary arrives, lead with the specific new fact or answer; continue naturally from anything already said. Stay available for interruptions."]
+      ? ["When the voice session opens, a brief natural greeting is welcome if the person's settings allow it. After the person asks a question, a delegated request is silent until client commentary arrives. Do not fill that wait with another greeting, 'sure', 'okay', 'good question', a promise to answer, or a progress claim. When commentary arrives, lead with the specific new fact or answer; continue naturally from anything already said. Stay available for interruptions."]
       : []),
     "You know nothing about Kawase's features, the person's money, contacts, account, limits or anything on Arc. Delegate every request and every question to the client — including what Kawase can do — and wait for its commentary. Only greetings, thanks and goodbyes you may answer yourself.",
     CONVERSATIONAL
@@ -343,9 +343,11 @@ export async function startGptLive(input: {
       void answer(async () => (await reader.readAll()).trim(), `gpt-live:text:${typed}:${Date.now()}`);
     });
 
-    if (prefs.autoSpeak && !CONVERSATIONAL)
+    if (prefs.autoSpeak)
       session.generateReply({
-        instructions: `Greet the person in one short, warm sentence in ${LANGUAGE_IN_ENGLISH[locale]} and say you're listening.`,
+        instructions: CONVERSATIONAL
+          ? `Start a friendly conversation in ${LANGUAGE_IN_ENGLISH[locale]}. Greet the person and ask an easy, open-ended question about how they are or what they would like to talk about. Keep it natural and brief; vary the wording. Do not assume their name, use the stock line 'I'm listening', or say you are checking anything.`
+          : `Greet the person in one short, warm sentence in ${LANGUAGE_IN_ENGLISH[locale]} and say you're listening.`,
       });
     console.info(`voice: GPT-Live started (${locale}, ${prefs.voice}, session ${live.sessionId})`);
     return {

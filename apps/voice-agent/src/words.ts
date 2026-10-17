@@ -3,16 +3,16 @@ import type { SupportedLocale } from "@kawase/config";
 
 /** The first thing the person hears in the fallback pipeline, in their language: the session is live. */
 export const GREETING: Record<SupportedLocale, string> = {
-  en: "Hi, I'm listening.",
-  es: "Hola, te escucho.",
-  fr: "Bonjour, je vous écoute.",
-  pt: "Oi, estou ouvindo.",
-  ru: "Привет, я слушаю.",
-  zh: "你好，我在听。",
-  hi: "नमस्ते, मैं सुन रहा हूँ।",
-  bn: "নমস্কার, আমি শুনছি।",
-  ar: "مرحباً، أنا أستمع.",
-  ur: "سلام، میں سن رہا ہوں۔",
+  en: "Hey! How's it going today?",
+  es: "¡Hola! ¿Cómo te va hoy?",
+  fr: "Salut ! Comment ça va aujourd'hui ?",
+  pt: "Oi! Como vai seu dia?",
+  ru: "Привет! Как проходит день?",
+  zh: "嗨！今天过得怎么样？",
+  hi: "नमस्ते! आज आपका दिन कैसा जा रहा है?",
+  bn: "হ্যালো! আজ আপনার দিন কেমন যাচ্ছে?",
+  ar: "أهلاً! كيف يسير يومك؟",
+  ur: "سلام! آج آپ کا دن کیسا گزر رہا ہے؟",
 };
 
 /** Said while the agent checks something (fallback pipeline only; GPT-Live paces itself). */

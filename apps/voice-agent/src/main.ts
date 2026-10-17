@@ -120,4 +120,8 @@ export default defineAgent({
   },
 });
 
-cli.runApp(new ServerOptions({ agent: fileURLToPath(import.meta.url), agentName: voiceAgentName(process.env) }));
+cli.runApp(new ServerOptions({
+  agent: fileURLToPath(import.meta.url),
+  agentName: voiceAgentName(process.env),
+  ...(process.env.KAWASE_VOICE_WORKER_PORT ? { port: Number(process.env.KAWASE_VOICE_WORKER_PORT) } : {}),
+}));
