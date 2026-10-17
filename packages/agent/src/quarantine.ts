@@ -155,7 +155,7 @@ export const KAWASE_ONLY: ReadonlySet<string> = new Set([
   "get_limits", "pause_all", "set_risk_mode", "propose_limit_change", "propose_allowlist_change", "revoke_grant",
   "propose_supply", "propose_borrow", "propose_repay", "start_buy", "propose_perp_order", "get_positions", "close_position", "protect_position",
   "create_payment_request", "split_bill", "remind_payment", "weekly_report", "export_history",
-  "top_up_agent_wallet", "sign_out_device", "get_fee_reserve", "delete_account",
+  "top_up_agent_wallet", "sign_out_device", "get_fee_reserve", "delete_account", "show_share_card",
 ]);
 
 /** Every tool the quarantine knows, for the test that keeps the two lists complete. */
