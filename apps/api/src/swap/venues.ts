@@ -111,8 +111,12 @@ const INTEGRATOR = "kawase";
 const ZEROX_REGISTRY: Address = "0x00000000000004533Fe15556B1E086BB1A72cEae";
 const ZEROX_TAKER_FEATURE = 2n;
 const SETTLERS_TTL_MS = 600_000;
-/** How long a venue whose route reverted sits out of that pair's races. */
-const REVERTING_TTL_MS = 600_000;
+/**
+ * How long a venue whose route reverted sits out of that pair's races. Six hours: the reverts seen are structural
+ * (KyberSwap's executor wrapping Arc's USDC like WETH fails every time), and the next best is within a fraction of a
+ * percent, so a long bench costs little and spares each buyer the switch.
+ */
+const REVERTING_TTL_MS = 21_600_000;
 /**
  * Pair keys whose route reverted, with when they may race again. One map for the process: the swap ticket, the route
  * race, chat and automations each build their own fan-out, and all of them must skip the same broken route.
