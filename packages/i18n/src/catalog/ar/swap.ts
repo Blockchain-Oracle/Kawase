@@ -41,6 +41,7 @@ export const swap: Catalog["swap"] = {
   signPrompt: "بدّل {{paid}} مقابل {{min}} على الأقل",
   cancel: "ألغِ التبديل",
   changed: "تغيّر السعر. راجع الأرقام الجديدة.",
+  routeFailed: "مسار {{venue}} يفشل على Arc الآن، لذا انتقل Kawase إلى أفضل مسار تالٍ.",
   quoteUnavailable: "لا يوجد سعر الآن. حاول بعد قليل.",
   testnetPools: "السيولة في الشبكة التجريبية قليلة، لذا قد تبتعد الأسعار هنا كثيرًا عن السوق.",
   changeAmount: "تغيير المبلغ",

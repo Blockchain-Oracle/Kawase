@@ -5,7 +5,8 @@
 // price. Then the person's holding (with the same token on other chains and Bring to Arc), their own trades' profit
 // and loss, this asset's activity, the stats, Safety (Kawase's copycat rule and GoPlus, lookalikes linked) and About.
 // Phone: a sticky bar with Buy · Sell and More (a sheet where every other action is listed with its reason when it
-// cannot be done here). Desktop: two columns, the page as the stage and the swap ticket itself as the ticket column
+// cannot be done here), and over it the quick buys ($1 · $5 · $10 · $25 of USDC), each straight to the race and the
+// slide with no keypad. Desktop: two columns, the page as the stage and the swap ticket itself as the ticket column
 // (Buy · Sell, the same ticket as /swap, inline), More in the right drawer (?d=more). Guests see everything; any
 // write asks them to sign in in place. Loading is the page's own shape; a missing token or a failed read says so.
 import * as Clipboard from "expo-clipboard";
@@ -41,7 +42,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 import type { AgentFeedItem, Candle, ChartRange, TokenAction, TokenActionView } from "@kawase/api-client";
-import { explorerAddressUrl, PUBLIC_LINKS } from "@kawase/config";
+import { explorerAddressUrl, PUBLIC_LINKS, QUICK_BUY_USD } from "@kawase/config";
 import { CHAIN_IDS } from "@kawase/identity";
 import { AreaChart, type ChartPoint } from "@kawase/ui-native/components/area-chart";
 import { Mark } from "@kawase/ui-native/components/mark";
@@ -474,6 +475,15 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
     }
   };
 
+  /** A quick buy: that many dollars of USDC, straight to the race and the slide. */
+  const quickBuy = (usd: number) => {
+    fire("tick");
+    if (status !== "account") {
+      signIn.open();
+      return;
+    }
+    router.push({ pathname: "/swap", params: { buy: token.address, amount: String(usd) } });
+  };
   const action = (id: TokenAction) => detail.actions.find((entry) => entry.id === id)!;
   const buy = action("buy");
   const sell = action("sell");
@@ -1014,10 +1024,31 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
     );
   }
 
+  // Quick buys are for coins (a dollar is not bought with dollars) the person may buy here now.
+  const quick = !buyReason && token.kind !== "dollar";
   return (
     <View style={styles.page}>
       {header}
       <PhoneScroll bottom={BAR_H + SPACE.xxl}>{page}</PhoneScroll>
+      {quick ? (
+        <View style={[styles.quick, { backgroundColor: color.ground }]}>
+          {QUICK_BUY_USD.map((usd) => {
+            const label = new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(usd);
+            return (
+              <Pressable
+                key={usd}
+                accessibilityRole="button"
+                accessibilityLabel={t("tokenPage.quickBuy", { amount: label, symbol: token.symbol })}
+                onPress={() => quickBuy(usd)}
+                style={({ pressed }) => [styles.quickChip, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+              >
+                <Icon icon={ACTION_ICON.buy} size={SIZE.iconSm} tint={color.accent} />
+                <Text style={[TYPE.chipLabel, { color: color.ink }]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       <View style={[styles.bar, { paddingBottom: insets.bottom + SPACE.md, backgroundColor: color.ground }]}>
         <View style={styles.grow}>
           <Button
@@ -1098,4 +1129,6 @@ const styles = StyleSheet.create({
     paddingTop: SPACE.md,
   },
   reason: { textAlign: "center", paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
+  quick: { flexDirection: "row", gap: SPACE.sm, paddingHorizontal: SPACE.inset, paddingTop: SPACE.sm },
+  quickChip: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.xs, height: SIZE.chipHeight + SPACE.sm, borderRadius: RADIUS.pill },
 });

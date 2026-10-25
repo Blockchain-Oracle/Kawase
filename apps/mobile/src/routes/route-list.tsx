@@ -196,7 +196,7 @@ export function RouteList({ race, state = "live", selected, onSelect, onRetry, r
   );
 }
 
-const KNOWN_REASONS = new Set(["timeout", "no_route", "not_on_network", "needs_key", "amount_too_low", "rate_limited", "failed", "not_enabled", "low_liquidity", "small_for_amount", "advanced"]);
+const KNOWN_REASONS = new Set(["timeout", "no_route", "not_on_network", "needs_key", "amount_too_low", "rate_limited", "failed", "not_enabled", "low_liquidity", "small_for_amount", "advanced", "reverts"]);
 const reasonKey = (reason: string | null) => (reason && KNOWN_REASONS.has(reason) ? reason : "failed");
 
 function RaceHeader({ race, state, answered, elapsed, onRetry }: { race: RouteRace; state: RouteListState; answered: number; elapsed: number; onRetry?: (() => void) | undefined }) {

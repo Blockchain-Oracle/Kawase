@@ -99,6 +99,7 @@ export const shell = {
     rejected: { title: "You cancelled", body: "Nothing was sent." },
     slippage: { title: "The price moved", body: "Get a fresh quote and try again." },
     expired: { title: "That quote expired", body: "Get a fresh quote and try again." },
+    reverted: { title: "The route failed on Arc", body: "The trade was undone and only the network fee was spent. Try again for the next best route." },
     unknown: { title: "Something went wrong", body: "Try again in a moment." },
   },
 } as const;

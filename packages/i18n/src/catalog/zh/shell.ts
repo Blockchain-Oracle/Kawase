@@ -84,6 +84,7 @@ export const shell: Catalog["shell"] = {
     rejected: { title: "你已取消", body: "没有发送任何内容。" },
     slippage: { title: "价格已变动", body: "请获取新报价后重试。" },
     expired: { title: "报价已过期", body: "请获取新报价后重试。" },
+    reverted: { title: "该路线在 Arc 上失败", body: "交易已撤销，只扣了网络费。再试一次会走下一条最优路线。" },
     unknown: { title: "出了点问题", body: "请稍后重试。" },
   },
   dock: {

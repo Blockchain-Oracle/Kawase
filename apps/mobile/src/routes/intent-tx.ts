@@ -22,7 +22,8 @@ type WalletIntent = {
 
 const OPEN: ReadonlySet<IntentState> = new Set(["submitted", "working", "input_required", "auth_required", "ready_for_approval"]);
 const MOVING: ReadonlySet<IntentState> = new Set(["approved", "executing"]);
-const REVERTED: Diagnosis = { kind: "unknown", retryable: true, technical: "reverted" };
+/** The route undid itself on chain: said as such ("The route failed on Arc"), never "Something went wrong" (10-25). */
+const REVERTED: Diagnosis = { kind: "reverted", retryable: true };
 const NOT_SENT: Diagnosis = { kind: "unknown", retryable: true, technical: "not_sent" };
 
 /**

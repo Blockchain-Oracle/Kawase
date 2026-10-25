@@ -87,6 +87,7 @@ export const shell: Catalog["shell"] = {
     rejected: { title: "Você cancelou", body: "Nada foi enviado." },
     slippage: { title: "O preço mudou", body: "Peça uma nova cotação e tente de novo." },
     expired: { title: "A cotação expirou", body: "Peça uma nova cotação e tente de novo." },
+    reverted: { title: "A rota falhou na Arc", body: "A troca foi desfeita e só a taxa de rede foi paga. Tente de novo pela próxima melhor rota." },
     unknown: { title: "Algo deu errado", body: "Tente de novo em instantes." },
   },
   dock: {

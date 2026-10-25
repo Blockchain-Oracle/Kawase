@@ -1,5 +1,5 @@
-// The foot of a route ticket (swap, move), the whole money lifecycle in one place (premium bar §3): blocked → the
-// kit's BlockedCta naming its fix; review → slide to confirm (the accent rail: a trade, Senryo); in flight → the TxCta
+// The foot of a route ticket (swap, move), the whole money lifecycle in one place (premium bar §3): blocked (or any
+// blocker the host passes, a reverted rehearsal included) → the kit's BlockedCta naming its fix; review → slide to confirm (the accent rail: a trade, Senryo); in flight → the TxCta
 // plate with its phase bar and Signing · Sent · Confirmed (or the ticket's own steps); confirmed → it morphs into the
 // receipt; failed → the failure card, which always says whether money moved, with Try again when nothing did. The
 // slide resets on any new version (`resetKey`).
@@ -40,6 +40,9 @@ export function TicketCta({
   busy?: boolean;
 }) {
   if (tx.kind === "blocked") return <BlockedCta blocker={blocker ?? { label: tx.reason }} {...(onFix ? { onFix } : {})} />;
+  // A blocker holds the slide whatever the lifecycle says: a rehearsal that reverted reached a live slide here, and two
+  // KyberSwap buys went out and reverted on chain (10-25).
+  if ((tx.kind === "review" || tx.kind === "idle") && blocker) return <BlockedCta blocker={blocker} {...(onFix ? { onFix } : {})} />;
   if (tx.kind === "review" || tx.kind === "idle") {
     return (
       <View style={styles.wrap}>

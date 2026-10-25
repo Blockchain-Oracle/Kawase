@@ -53,6 +53,7 @@ export const routes = {
   reason_failed: "Didn't answer",
   reason_not_enabled: "Can't run from Kawase yet",
   reason_low_liquidity: "Low liquidity",
+  reason_reverts: "Failed on Arc just now",
   reason_small_for_amount: "Too small for this amount",
   reason_advanced: "Advanced",
   emptyTitle: "No route right now",

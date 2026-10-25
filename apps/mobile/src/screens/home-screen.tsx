@@ -1,6 +1,7 @@
 // Home IS the agent (D37 decision 1; plan §D). Top to bottom:
 //   1. the header (avatar · network · inbox) and the one hero figure: the balance, rolling, with today's change and the
 //      week's sparkline; tapping it opens the portfolio sheet (assets, hidden, other chains + Bring to Arc, positions);
+//      under it what you hold (home-holdings: the biggest coins, each opening its page; beside the feed on a desktop);
 //   2. the live run: what the person just asked, drawn as one object (the run card: understand → race → approve →
 //      steps → receipt), with a compact strip pinned to the top while it scrolls out of view;
 //   3. the feed of what Kawase did — Done · Held · Skipped · Watching (with a countdown ring) · Found — day-grouped,
@@ -50,6 +51,7 @@ import { FeedDetailSheet } from "@/home/feed-detail-sheet";
 import { FeedFilters, FeedTimeline, rowsFor, type FeedFilter } from "@/home/feed-timeline";
 import { BottomFade } from "@/home/bottom-fade";
 import { HomeComposer, useComposerClearance } from "@/home/home-composer";
+import { HomeHoldings } from "@/home/home-holdings";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { HomeRun, type HomeRunHandle, type RunStatus } from "@/home/home-run";
 import { MarketsGlance, SignInPlate, SignInStage } from "@/home/markets-glance";
@@ -291,6 +293,7 @@ export function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.sideContent, { paddingBottom: composerClearance }]}
       >
+        {account ? <HomeHoldings portfolio={portfolio.portfolio} onSeeAll={() => setPortfolioOpen(true)} /> : null}
         <MarketsGlance />
       </ScrollView>
     </View>
@@ -319,6 +322,7 @@ export function HomeScreen() {
           contentContainerStyle={[styles.content, wide ? styles.wideContent : null, { paddingBottom: composerClearance }]}
         >
           {hero}
+          {account ? <HomeHoldings portfolio={portfolio.portfolio} onSeeAll={() => setPortfolioOpen(true)} /> : null}
           {runSection}
           {feedSection}
           {/* Guests, and an account with nothing in it yet, see the live markets (a new account's Home was emptier than a guest's). */}
@@ -421,7 +425,7 @@ const styles = StyleSheet.create({
   list: { gap: SPACE.xl, paddingTop: SPACE.md, width: "100%", maxWidth: LIST_MAX_PX, alignSelf: "center" },
   guestStage: { flexGrow: 1, justifyContent: "center", paddingTop: SPACE.xxl },
   sideColumn: { width: SIDE_COLUMN_PX, flexGrow: 0 },
-  sideContent: { paddingTop: SPACE.xxl },
+  sideContent: { gap: SPACE.xl, paddingTop: SPACE.xxl },
   centered: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm },
   centerText: { textAlign: "center" },
   section: { gap: SPACE.md },

@@ -54,6 +54,7 @@ export const routes: Catalog["routes"] = {
   reason_failed: "No respondió",
   reason_not_enabled: "Aún no se puede ejecutar desde Kawase",
   reason_low_liquidity: "Poca liquidez",
+  reason_reverts: "Falló en Arc hace un momento",
   reason_small_for_amount: "Muy pequeño para este monto",
   reason_advanced: "Avanzado",
   emptyTitle: "Sin ruta por ahora",

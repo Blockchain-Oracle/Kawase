@@ -41,6 +41,7 @@ export const swap: Catalog["swap"] = {
   signPrompt: "{{paid}} को कम से कम {{min}} में स्वैप करें",
   cancel: "स्वैप रद्द करें",
   changed: "कीमत बदल गई। नए आँकड़े देखें।",
+  routeFailed: "{{venue}} का रूट अभी Arc पर फ़ेल हो रहा है, इसलिए Kawase ने अगला सबसे अच्छा रूट चुना।",
   quoteUnavailable: "अभी कोई कीमत नहीं है। थोड़ी देर में फिर कोशिश करें।",
   testnetPools: "टेस्टनेट में तरलता कम है, इसलिए यहाँ कीमतें बाज़ार से काफ़ी अलग हो सकती हैं।",
   changeAmount: "राशि बदलें",

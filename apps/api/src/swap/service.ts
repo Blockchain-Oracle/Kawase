@@ -14,6 +14,8 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
+  BaseError,
+  ExecutionRevertedError,
   decodeEventLog,
   erc20Abi,
   formatUnits,
@@ -497,10 +499,14 @@ export class SwapService {
       client.getTransactionCount({ address: draft.from, blockTag: "pending" }),
       walletGasPrice(client),
       client.estimateGas({ account: draft.from, to: draft.from, data }).catch((error: unknown) => {
+        // The node says these calls revert: never hand them out (10-25, two KyberSwap buys broadcast anyway and paid gas
+        // for nothing). A node that only failed to answer keeps the venue's fixed estimate.
+        if (executionReverted(error)) return "reverted" as const;
         this.log.warn({ err: error, intentId }, "swap gas estimate failed");
         return gasEstimate(venue);
       }),
     ]);
+    if (estimate === "reverted") return this.routeFailed(user, intentId, venue, draft, "gas estimate reverted");
     const gas = (estimate * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT;
     if (gas * price.maxFeePerGas > draft.maxFee) return this.redraft(user, intentId);
     const transaction: UnsignedTransaction = {
@@ -633,14 +639,38 @@ export class SwapService {
    * the person's own address on Arc's latest state, so the card can show what leaves and arrives and catch a revert
    * before anything is signed. Nothing is stored or sent.
    */
-  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed" }> {
+  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed"; reason?: "route_failed"; venue?: string }> {
     const fresh = await this.freshCalls(user, intentId, version);
     if (fresh.kind !== "calls") return { status: "changed" };
     const { before, draft, calls } = fresh;
     const view = (fresh.current.payload as DraftPayload).view;
     const tokens = view?.tokens ? [view.tokens.in, view.tokens.out].map((token) => ({ address: token.address, symbol: token.symbol, decimals: token.decimals })) : [];
     const data = encodeSelfBatch(calls).toLowerCase() as Hex;
-    return simulate(before.network, draft.from, [{ from: draft.from, to: draft.from, data }], tokens);
+    const result = await simulate(before.network, draft.from, [{ from: draft.from, to: draft.from, data }], tokens);
+    if (result.status !== "reverted") return result;
+    // The route itself fails on Arc as it is now: the next best gets a new version, which the card simulates again.
+    const next = await this.routeFailed(user, intentId, fresh.venue, draft, result.reason);
+    return next.status === "changed" ? { status: "changed", reason: "route_failed", venue: fresh.venue } : result;
+  }
+
+  /**
+   * The chosen venue's calls revert on Arc (its rehearsal or the node's gas estimate said so). The venue sits out this
+   * pair's races for a while, a pick of it is dropped, and the swap gets a new version on the next best route.
+   */
+  private async routeFailed(user: SessionUser, intentId: string, venue: SwapVenue, draft: SwapDraft, why: string): Promise<SwapApproveResponse> {
+    this.log.warn({ intentId, venue, why }, "swap route reverts, benched");
+    this.venues.benchReverting(venue, { chainId: draft.chainId, tokenIn: draft.tokenIn, tokenOut: draft.tokenOut });
+    await this.dropPick(intentId, venue);
+    const answer = await this.redraft(user, intentId);
+    return answer.status === "changed" ? { ...answer, reason: "route_failed" } : answer;
+  }
+
+  /** A person's pick of a venue that failed is forgotten, so the swap is not held to it once it races again. */
+  private async dropPick(intentId: string, venue: SwapVenue) {
+    const [row] = await this.db.select({ request: intents.request }).from(intents).where(eq(intents.id, intentId));
+    const request = row?.request as StoredSwapRequest | undefined;
+    if (request?.venue !== venue) return;
+    await this.db.update(intents).set({ request: { ...request, venue: null } }).where(eq(intents.id, intentId));
   }
 
   private async redraft(user: SessionUser, intentId: string): Promise<SwapApproveResponse> {
@@ -903,6 +933,8 @@ export class SwapService {
     const witnessed = receipt.status === "success" && moved.out === draft.amountIn && moved.in >= draft.minOut;
     if (receipt.status === "success" && !witnessed) this.log.error({ intentId: intent.id, tx: receipt.transactionHash }, "security.receipt_mismatch");
     if (!witnessed) {
+      // A route that reverted on chain sits out this pair's races, so "Try again" goes by the next best.
+      if (receipt.status !== "success" && payload?.venue) this.venues.benchReverting(payload.venue, { chainId: draft.chainId, tokenIn: draft.tokenIn, tokenOut: draft.tokenOut });
       await this.settleFailed(intent.id, attempt.id, receipt.status === "success" ? "mismatch" : "reverted", null, receipt);
       return;
     }
@@ -1048,6 +1080,9 @@ function outcomeOf(state: IntentState, attempt: AttemptRow | undefined) {
 
 /** Gas for approve + swap before an estimate is possible: Circle's adapter is lighter than an aggregator route. */
 const gasEstimate = (venue: SwapVenue) => (venue === "app_kit" ? SWAP_BATCH_GAS_ESTIMATE : AGGREGATOR_BATCH_GAS_ESTIMATE);
+
+/** The node refused the calls because they revert (not because it failed to answer). */
+const executionReverted = (error: unknown) => error instanceof BaseError && Boolean(error.walk((cause) => cause instanceof ExecutionRevertedError));
 
 /**
  * Every venue asked: the chosen one (the person's pick, else the most delivered), the others that quoted, best first,

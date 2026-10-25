@@ -20,7 +20,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useSwapApproveLabel, useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
 import { SwapReview } from "@/swap/swap-review";
 import { SwapStatus } from "@/swap/swap-status";
-import { isSwapOpen, useSwap } from "@/swap/use-swap";
+import { isSwapOpen, useSwap, useSwapRehearsalChanged } from "@/swap/use-swap";
 
 import { useResumeWhenFixed } from "@/intents/use-resume";
 
@@ -43,7 +43,9 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   useResumeWhenFixed(isSwapOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}));
   // Every hook runs before the finished card's early return (a hook below it crashed the page when a swap settled).
   const ready = isSwapOpen(intent) && !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
-  const rehearsal = useRehearsal("swaps", intent, ready);
+  // A route that reverts is benched by the api: the next best arrives as a new version, read and simulated in turn.
+  const onRehearsalChanged = useSwapRehearsalChanged(controller.refresh);
+  const rehearsal = useRehearsal("swaps", intent, ready, onRehearsalChanged);
 
   if (!isSwapOpen(intent)) {
     return (

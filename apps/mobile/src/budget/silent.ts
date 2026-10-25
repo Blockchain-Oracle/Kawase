@@ -16,7 +16,7 @@ import { api } from "@/session/api";
 
 import { arcReads } from "./chain";
 import { budgetApi } from "./client";
-import { budgetAllows, type GuardAction, type GuardContext, type GuardDeps, type GuardVerdict } from "./guard";
+import { budgetAllows, swapTokensSilent, type GuardAction, type GuardContext, type GuardDeps, type GuardVerdict } from "./guard";
 import { phoneLedger } from "./ledger-store";
 import { kyberQuote } from "./price";
 
@@ -100,6 +100,10 @@ function earnAction(intent: EarnIntent, leaves: readonly Record<string, unknown>
 export async function trySilentLeaves<T extends SwapIntent | EarnIntent>(kind: LeafKind, intent: T, signer: WalletSigner): Promise<SilentLeafOutcome<T>> {
   const context = await loadGuardContext(signer.address, intent.network).catch(() => undefined);
   if (!context || !mayCover(context, kind)) return { handled: false };
+  // A coin the guard never signs for silently (any token Kawase does not vouch for) skips the api's leaves: asking for
+  // them only to refuse cost every such buy about two seconds before the confirm.
+  const tokens = kind === "swap" ? (intent as SwapIntent).draft?.tokens : undefined;
+  if (tokens && !swapTokensSilent(context.chainId, tokens.in.address as Address, tokens.out.address as Address)) return { handled: false, verdict: { silent: false, reason: "token_unvetted" } };
   const offer = (
     kind === "swap" ? await api.budget.swapLeaf(intent.id, intent.version, randomUUID()) : await api.budget.earnLeaf(intent.id, intent.version, randomUUID())
   ) as LeafResponse<T>;

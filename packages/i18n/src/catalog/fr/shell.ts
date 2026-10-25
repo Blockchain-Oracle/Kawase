@@ -90,6 +90,7 @@ export const shell: Catalog["shell"] = {
     rejected: { title: "Vous avez annulé", body: "Rien n’a été envoyé." },
     slippage: { title: "Le prix a bougé", body: "Demandez un nouveau devis et réessayez." },
     expired: { title: "Ce devis a expiré", body: "Demandez un nouveau devis et réessayez." },
+    reverted: { title: "La route a échoué sur Arc", body: "L'échange a été annulé, seuls les frais de réseau ont été payés. Réessayez pour la meilleure route suivante." },
     unknown: { title: "Un problème est survenu", body: "Réessayez dans un instant." },
   },
   dock: {

@@ -5,6 +5,8 @@
 export const SWAP_BATCH_GAS_ESTIMATE = 700_000n;
 /** A swap quote older than this is fetched again before it is shown as current. */
 export const SWAP_QUOTE_TTL_S = 30;
+/** A token page's quick buys, in US dollars of USDC: one tap to the race and the slide (Abu 10-25, FOMO-style buying). */
+export const QUICK_BUY_USD = [1, 5, 10, 25] as const;
 /** Who quotes and routes swaps today (shown on the confirm card). */
 export const SWAP_PROVIDER_LABEL = "Circle App Kit";
 

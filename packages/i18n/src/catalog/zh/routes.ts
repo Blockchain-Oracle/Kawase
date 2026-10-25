@@ -54,6 +54,7 @@ export const routes: Catalog["routes"] = {
   reason_failed: "未回复",
   reason_not_enabled: "暂不能从 Kawase 执行",
   reason_low_liquidity: "流动性低",
+  reason_reverts: "刚刚在 Arc 上失败",
   reason_small_for_amount: "对此金额来说太小",
   reason_advanced: "进阶",
   emptyTitle: "暂时没有路线",

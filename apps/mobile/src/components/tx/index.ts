@@ -3,7 +3,7 @@
 export { BlockedCta, type Blocker } from "./BlockedCta";
 export { TxCta, type TxCtaProps } from "./TxCta";
 export { TxFailureCard } from "./TxFailureCard";
-export { TxMorph } from "./TxMorph";
+export { TxArrive, TxMorph } from "./TxMorph";
 export { TxSteps, txSteps } from "./TxSteps";
 export {
   answerLost,

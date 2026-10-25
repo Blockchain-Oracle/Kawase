@@ -370,7 +370,7 @@ export type SwapRouteView = {
   feeToken?: string | null | undefined;
   /** The venue's id for this quote (Uniswap requestId, 0x zid, Socket quoteId). */
   quoteId?: string | null | undefined;
-  /** Why it was not chosen or did not quote: not_on_network, no_route, timeout, failed, needs_key, rate_limited, less_out; "picked" on a chosen row the person picked over a better one. */
+  /** Why it was not chosen or did not quote: not_on_network, no_route, timeout, failed, needs_key, rate_limited, reverts (its route failed on Arc just now), less_out; "picked" on a chosen row the person picked over a better one. */
   reason: string | null;
 };
 
@@ -436,7 +436,8 @@ export type SwapRequest = {
 };
 
 export type SwapApproveResponse =
-  | { status: "executing" | "changed" | "final"; intent: SwapIntent }
+  /** `reason: "route_failed"`: the chosen route reverts on Arc, so the new version is on the next best venue. */
+  | { status: "executing" | "changed" | "final"; intent: SwapIntent; reason?: "route_failed" | undefined }
   | { status: "sign"; intent: SwapIntent; approvalId: string; transaction: UnsignedTransaction };
 
 // ── Bridges (Stage 6b) ──────────────────────────────────────────────────────────────────────────────────────
@@ -860,4 +861,5 @@ export type RehearsalView =
     }
   | { status: "reverted"; reason: string; at: string }
   | { status: "unavailable"; at: string }
-  | { status: "changed" };
+  /** A new version replaced the one asked about; `route_failed` when this simulation reverted and the route was benched. */
+  | { status: "changed"; reason?: "route_failed" | undefined; venue?: string | undefined };

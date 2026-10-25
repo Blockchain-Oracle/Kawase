@@ -197,7 +197,7 @@ export function MoveTicket({
           slideLabel={draft?.direction === "in" ? t("move.slideBring") : t("move.slideSend")}
           resetKey={`${intent.id}:${intent.version}`}
           onConfirm={() => void confirm()}
-          blocker={blocker ?? (rehearsal.result?.status === "reverted" ? { label: t("feed.run.rehearsedStopped"), fix: null } : undefined)}
+          blocker={blocker ?? (rehearsable && rehearsal.result?.status === "reverted" ? { label: t("feed.run.rehearsedStopped"), fix: { kind: "retry" } } : undefined)}
           onFix={onFix}
           busy={(controller.busy && !inFlight) || (rehearsable && !rehearsalAllows(rehearsal.result) && rehearsal.result?.status !== "reverted")}
           steps={<MoveSteps intent={intent} signing={signingSince !== null} />}

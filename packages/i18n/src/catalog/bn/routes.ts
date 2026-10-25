@@ -54,6 +54,7 @@ export const routes: Catalog["routes"] = {
   reason_failed: "উত্তর দেয়নি",
   reason_not_enabled: "এখনও Kawase থেকে চালানো যায় না",
   reason_low_liquidity: "কম তারল্য",
+  reason_reverts: "এইমাত্র Arc-এ ব্যর্থ হয়েছে",
   reason_small_for_amount: "এই পরিমাণের জন্য খুব ছোট",
   reason_advanced: "উন্নত",
   emptyTitle: "এখন কোনো রুট নেই",

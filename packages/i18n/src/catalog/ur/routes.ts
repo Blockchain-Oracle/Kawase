@@ -54,6 +54,7 @@ export const routes: Catalog["routes"] = {
   reason_failed: "جواب نہیں دیا",
   reason_not_enabled: "ابھی Kawase سے نہیں چل سکتا",
   reason_low_liquidity: "کم لیکویڈیٹی",
+  reason_reverts: "ابھی Arc پر ناکام ہوا",
   reason_small_for_amount: "اس رقم کے لیے بہت چھوٹا",
   reason_advanced: "پیچیدہ",
   emptyTitle: "ابھی کوئی راستہ نہیں",

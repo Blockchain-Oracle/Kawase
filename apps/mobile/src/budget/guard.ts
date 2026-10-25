@@ -120,6 +120,13 @@ const CATEGORY: Record<GuardAction["kind"], BudgetCategory> = { swap: "swap", ea
 const SILENT_KINDS = new Set(["dollar", "fiat", "bitcoin", "ether", "rwa", "token"]);
 const STABLE_KINDS = new Set(["dollar", "fiat"]);
 
+/** Whether both sides of a swap are tokens a silent swap may touch (the first thing the guard asks of a swap). */
+export function swapTokensSilent(chainId: number, tokenIn: Address, tokenOut: Address): boolean {
+  const sold = vouchedToken(chainId, tokenIn);
+  const bought = vouchedToken(chainId, tokenOut);
+  return Boolean(sold && bought && SILENT_KINDS.has(sold.kind) && SILENT_KINDS.has(bought.kind));
+}
+
 function policyOf(view: BudgetView): BudgetPolicy | undefined {
   const { policy } = view;
   if (!isAddress(policy.wallet) || !/^\d+$/.test(policy.weeklyCap) || !/^\d+$/.test(policy.perActionCap)) return undefined;
@@ -172,9 +179,9 @@ export async function budgetAllows(action: GuardAction, context: GuardContext, d
 
   switch (action.kind) {
     case "swap": {
-      const tokenIn = vouchedToken(chainId, action.tokenIn);
-      const tokenOut = vouchedToken(chainId, action.tokenOut);
-      if (!tokenIn || !tokenOut || !SILENT_KINDS.has(tokenIn.kind) || !SILENT_KINDS.has(tokenOut.kind)) return refuse("token_unvetted");
+      if (!swapTokensSilent(chainId, action.tokenIn, action.tokenOut)) return refuse("token_unvetted");
+      const tokenIn = vouchedToken(chainId, action.tokenIn)!;
+      const tokenOut = vouchedToken(chainId, action.tokenOut)!;
       const venueContracts = swapVenueContracts(chainId, action.venue);
       if (!venueContracts) return refuse("venue_off", action.venue);
       const usdc = arcStablecoin(network, "USDC");

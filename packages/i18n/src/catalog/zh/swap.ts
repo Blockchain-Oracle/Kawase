@@ -41,6 +41,7 @@ export const swap: Catalog["swap"] = {
   signPrompt: "用 {{paid}} 兑换至少 {{min}}",
   cancel: "取消兑换",
   changed: "价格有变动。请查看新的数字。",
+  routeFailed: "{{venue}} 的路线目前在 Arc 上失败，Kawase 已换到下一条最优路线。",
   quoteUnavailable: "暂时没有价格，请稍后再试。",
   testnetPools: "测试网的流动性很少，这里的价格可能与市场相差很大。",
   changeAmount: "修改金额",

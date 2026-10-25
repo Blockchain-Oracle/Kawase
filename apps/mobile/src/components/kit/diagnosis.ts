@@ -16,6 +16,8 @@ export type DiagnosisKind =
   | "rejected"
   | "slippage"
   | "expired"
+  /** It reached the chain and the route undid itself there (only the network fee was spent). */
+  | "reverted"
   | "unknown";
 
 export type Diagnosis = {
@@ -57,6 +59,7 @@ const RETRYABLE: ReadonlySet<DiagnosisKind> = new Set([
   "rate-limited",
   "expired",
   "slippage",
+  "reverted",
   "unknown",
 ]);
 

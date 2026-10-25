@@ -37,7 +37,7 @@ import { recipientName, useMoney, usePolicyText } from "@/send/copy";
 import { isFinished as isSendFinished, isMoving as isSendMoving, isOpen as isSendOpen, useSend } from "@/send/use-send";
 import { useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
 import { SwapTokenMark, useSwapMoney } from "@/swap/swap-tokens";
-import { isSwapMoving, isSwapOpen, useSwap } from "@/swap/use-swap";
+import { isSwapMoving, isSwapOpen, useSwap, useSwapRehearsalChanged } from "@/swap/use-swap";
 
 import { ShareReceiptButton } from "@/receipt/share-receipt";
 import type { ReceiptData } from "@/receipt/receipt-slip";
@@ -174,7 +174,8 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
   const ready = isSwapOpen(intent) && !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
   const state = txStateOf(intent, controller.busy);
   // Rehearsed on Arc before anything is signed (Aomi's "SIMULATED ✓"): a revert stops it here.
-  const rehearsal = useRehearsal("swaps", intent, ready);
+  const onRehearsalChanged = useSwapRehearsalChanged(controller.refresh);
+  const rehearsal = useRehearsal("swaps", intent, ready, onRehearsalChanged);
   const rehearsed = rehearsalAllows(rehearsal.result);
 
   // Inside the budget and watched live: once the rehearsal passes, the run goes on by itself, once (never again after

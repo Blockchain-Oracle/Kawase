@@ -39,6 +39,7 @@ export const swap = {
   signPrompt: "Swap {{paid}} for at least {{min}}",
   cancel: "Cancel swap",
   changed: "The price moved. Check the new numbers.",
+  routeFailed: "{{venue}}'s route fails on Arc right now, so Kawase switched to the next best.",
   quoteUnavailable: "No price right now. Try again in a moment.",
   testnetPools: "Testnet pools are thin, so prices here can be far from the market.",
   changeAmount: "Change amount",

@@ -53,6 +53,7 @@ export const tokenPage: Catalog["tokenPage"] = {
   s_danger: "危险",
   s_unknown: "未检查",
   a_buy: "买入",
+  quickBuy: "买入 {{amount}} 的 {{symbol}}",
   waitingTrades: "等待下一笔成交",
   waitingTradesBody: "线条将从 Arc 上的下一笔兑换开始；上方价格为实时。",
   group_trade: "交易",

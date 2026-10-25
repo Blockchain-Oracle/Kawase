@@ -40,10 +40,14 @@ function leafKindOf(calls: unknown): "swap" | "earn" | undefined {
   return undefined;
 }
 
-/** Reasons the person already knows from their own settings: no toast when the confirm appears. */
-const QUIET_REASONS = new Set(["no_budget", "paused", "guard_mode", "practice", "category_off"]);
+/**
+ * Reasons the person already knows: no toast when the confirm appears. A coin Kawase does not vouch for is one the
+ * person picked on its own page, chip and all (Abu, 10-25: "we already know that, why are you saying it?").
+ */
+const QUIET_REASONS = new Set(["no_budget", "paused", "guard_mode", "practice", "category_off", "token_unvetted"]);
 type Approve<T> =
-  | { status: "executing" | "changed" | "final"; intent: T }
+  /** `route_failed`: the chosen route reverts on Arc, so the new version is on the next best venue. */
+  | { status: "executing" | "changed" | "final"; intent: T; reason?: "route_failed" | undefined }
   | { status: "sign"; intent: T; approvalId: string; transaction: UnsignedTransaction }
   // A gasless move (Bring to Arc): one EIP-712 signature instead of a transaction; the api hands it on.
   | { status: "sign_typed"; intent: T; approvalId: string; typedData: Record<string, unknown> };
@@ -85,7 +89,8 @@ export type WalletIntentController<T, R> = {
 
 export function useWalletIntent<T extends Intent, R>(
   calls: WalletIntentApi<T, R>,
-  messages: { changed: string; unavailable: string },
+  /** `routeFailed`: what to say when the version it replaces had a route that reverts (named from that version). */
+  messages: { changed: string; unavailable: string; routeFailed?: ((before: T) => string) | undefined },
   initial?: T | undefined,
 ): WalletIntentController<T, R> {
   const { t } = useT();
@@ -150,13 +155,8 @@ export function useWalletIntent<T extends Intent, R>(
       if (sayIfPractice(error, t)) {
         // Practice mode: said with the way to turn it off.
       } else if (error instanceof ApiError) {
-        toast(
-          error.code === "quote_unavailable"
-            ? messages.unavailable
-            : error.code === "intent_stale" || error.code === "intent_final"
-              ? messages.changed
-              : t("send.failed"),
-        );
+        // An intent that already ended needs no words: the refresh below shows how it ended.
+        if (error.code !== "intent_final") toast(error.code === "quote_unavailable" ? messages.unavailable : error.code === "intent_stale" ? messages.changed : t("send.failed"));
       } else {
         setConnectionLost(true);
       }
@@ -193,7 +193,7 @@ export function useWalletIntent<T extends Intent, R>(
       // The brake's warning is on the card the person just tapped through; Face ID below is their override.
       const answer = await calls.approve(intent.id, intent.version, randomUUID(), hasBrake(intent.results));
       if (answer.status !== "sign" && answer.status !== "sign_typed") {
-        if (answer.status === "changed") toast(messages.changed);
+        if (answer.status === "changed") toast(answer.reason === "route_failed" && messages.routeFailed ? messages.routeFailed(intent) : messages.changed);
         show(answer.intent);
         return;
       }

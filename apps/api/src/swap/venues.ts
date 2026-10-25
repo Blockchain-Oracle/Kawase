@@ -52,7 +52,8 @@ export type VenueQuote = {
   quoteId: string | null;
 };
 
-export type VenueFailure = { venue: SwapVenue; reason: "not_on_network" | "no_route" | "timeout" | "failed" | "needs_key" | "rate_limited" };
+/** `reverts`: its route for this pair failed on Arc a moment ago (a rehearsal, a gas estimate or a receipt), so it sits out. */
+export type VenueFailure = { venue: SwapVenue; reason: "not_on_network" | "no_route" | "timeout" | "failed" | "needs_key" | "rate_limited" | "reverts" };
 
 export type VenueInput = {
   network: NetworkContext;
@@ -80,7 +81,15 @@ export type SwapVenues = {
   prepare(venue: SwapVenue, input: VenueInput & { minOut: bigint }): Promise<PreparedSwap>;
   /** False for a keyed venue this server has no key for: it is not asked in a race and never shown as a row. */
   configured(venue: SwapVenue): boolean;
+  /**
+   * The venue's route for this pair reverted on Arc (KyberSwap's executor wrapping Arc's USDC as if it were WETH, 10-25):
+   * it sits out every race for the pair for a while, so the next best is the one recommended and nobody pays gas twice.
+   */
+  benchReverting(venue: SwapVenue, pair: RoutePair): void;
 };
+
+/** A swap direction on one chain, as the route health is kept. */
+export type RoutePair = { chainId: number; tokenIn: string; tokenOut: string };
 
 /** API keys for the keyed venues; a venue without its key reports `needs_key` and the others decide. */
 export type VenueKeys = { uniswap?: string | undefined; zerox?: string | undefined };
@@ -102,6 +111,14 @@ const INTEGRATOR = "kawase";
 const ZEROX_REGISTRY: Address = "0x00000000000004533Fe15556B1E086BB1A72cEae";
 const ZEROX_TAKER_FEATURE = 2n;
 const SETTLERS_TTL_MS = 600_000;
+/** How long a venue whose route reverted sits out of that pair's races. */
+const REVERTING_TTL_MS = 600_000;
+/**
+ * Pair keys whose route reverted, with when they may race again. One map for the process: the swap ticket, the route
+ * race, chat and automations each build their own fan-out, and all of them must skip the same broken route.
+ */
+const benched = new Map<string, number>();
+const pairKey = (venue: SwapVenue, pair: RoutePair) => `${pair.chainId}:${venue}:${pair.tokenIn.toLowerCase()}:${pair.tokenOut.toLowerCase()}`;
 const registryAbi = parseAbi(["function ownerOf(uint256 tokenId) view returns (address)", "function prev(uint128 tokenId) view returns (address)"]);
 
 const toDecimal = (units: bigint, decimals: number) => {
@@ -126,7 +143,7 @@ export const failureOf = (venue: SwapVenue, error: unknown): VenueFailure => {
   if (error instanceof KyberSwapError) return { venue, reason: error.code === "unsupported_chain" ? "not_on_network" : error.code === "no_route" ? "no_route" : error.code === "timeout" ? "timeout" : "failed" };
   if (error instanceof UniswapError || error instanceof ZeroExError) return { venue, reason: error.code === "no_route" ? "no_route" : error.code === "timeout" ? "timeout" : error.code === "needs_key" ? "needs_key" : "failed" };
   if (error instanceof BridgeProviderError) return { venue, reason: error.code === "rate_limited" ? "rate_limited" : error.code === "timeout" ? "timeout" : "no_route" };
-  if (error instanceof VenueRefused) return { venue, reason: error.reason === "not_on_network" ? "not_on_network" : error.reason === "needs_key" ? "needs_key" : "no_route" };
+  if (error instanceof VenueRefused) return { venue, reason: error.reason === "not_on_network" ? "not_on_network" : error.reason === "needs_key" ? "needs_key" : error.reason === "reverts" ? "reverts" : "no_route" };
   return { venue, reason: /no route|not available|NO_POSSIBLE_ROUTE|1002/i.test(String(error)) ? "no_route" : "failed" };
 };
 
@@ -178,6 +195,14 @@ export function createSwapVenues(appKit: SwapEngine, keys: VenueKeys = appKit.ve
     return addresses;
   };
   const nativeUsdc = (input: VenueInput) => input.network.addresses.usdc;
+  const isBenched = (venue: SwapVenue, input: VenueInput) => {
+    const key = pairKey(venue, { chainId: input.network.chainId, tokenIn: input.tokenIn, tokenOut: input.tokenOut });
+    const until = benched.get(key);
+    if (until === undefined) return false;
+    if (until > Date.now()) return true;
+    benched.delete(key);
+    return false;
+  };
 
   const quoteOne = async (venue: SwapVenue, input: VenueInput): Promise<VenueQuote> => {
     switch (venue) {
@@ -227,12 +252,19 @@ export function createSwapVenues(appKit: SwapEngine, keys: VenueKeys = appKit.ve
   };
 
   const quoteEach = (input: VenueInput, only?: readonly SwapVenue[]): VenueAttempt[] =>
-    SWAP_VENUES.filter((venue) => !only || only.includes(venue)).map((venue) => ({ venue, result: within(quoteOne(venue, input), venue === "app_kit" ? APP_KIT_QUOTE_TIMEOUT_MS : SWAP_VENUE_TIMEOUT_MS) }));
+    SWAP_VENUES.filter((venue) => !only || only.includes(venue)).map((venue) => ({
+      venue,
+      result: isBenched(venue, input) ? Promise.reject(new VenueRefused(venue, "reverts")) : within(quoteOne(venue, input), venue === "app_kit" ? APP_KIT_QUOTE_TIMEOUT_MS : SWAP_VENUE_TIMEOUT_MS),
+    }));
 
   return {
     quoteEach,
 
     configured: (venue) => (venue === "uniswap" ? Boolean(keys.uniswap) : venue === "zerox" ? Boolean(keys.zerox) : true),
+
+    benchReverting: (venue, pair) => {
+      benched.set(pairKey(venue, pair), Date.now() + REVERTING_TTL_MS);
+    },
 
     async quoteAll(input, only) {
       const attempts = quoteEach(input, only);

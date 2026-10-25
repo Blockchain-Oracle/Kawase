@@ -10,7 +10,10 @@
 // Desktop (a window ≥ 1024): two columns, the ticket on the left and the live race on the right — the venues light up
 // as the person types, and a pick there is the venue the review starts from.
 // Entry: Home's Swap, the fan, a token page's Buy/Sell (`/swap?buy=0x…` / `?sell=0x…`), chat cards and links
-// (`/swap?from=USDC&amount=10`).
+// (`/swap?from=USDC&amount=10`). A token page's quick buy (`/swap?buy=0x…&amount=10`) skips the keypad: it goes straight
+// to the race and the slide, the way a FOMO-style app buys a coin.
+// A route that fails its rehearsal is benched by the api and the next best comes back as a new version (simulated
+// again, useSwapRehearsalChanged); the slide never moves on a rehearsal that reverted. Once the trade lands, the receipt is the page.
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { ArrowLeftRight } from "lucide-react-native";
@@ -23,7 +26,7 @@ import { arcIdentity, CHAIN_IDS, getEntity } from "@kawase/identity";
 import { useWide } from "@kawase/ui-native/lib/wide";
 
 import { AmountPad, type BlockerFix, Button, Icon, Panel, SectionLabel, SIZE, SPACE, TIMING, useTheme } from "@/components/kit";
-import { type Blocker, BlockedCta } from "@/components/tx";
+import { type Blocker, BlockedCta, TxArrive } from "@/components/tx";
 import { MainnetConsentSheet } from "@/components/network-pill";
 import { fire } from "@/feedback/fire";
 import { useFund } from "@/fund/fund-provider";
@@ -48,7 +51,7 @@ import { SwapReceipt } from "@/swap/swap-receipt";
 import { SwapReview } from "@/swap/swap-review";
 import { type TicketToken, TokenButton } from "@/swap/token-button";
 import { TradeSwitch } from "@/swap/trade-switch";
-import { isSwapOpen, useSwap } from "@/swap/use-swap";
+import { isSwapMoving, isSwapOpen, useSwap, useSwapRehearsalChanged } from "@/swap/use-swap";
 import { RehearsalBlock, rehearsalAllows, useRehearsal } from "@/chat/rehearsal";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
@@ -147,6 +150,8 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
   const [signingSince, setSigningSince] = React.useState<number | null>(null);
   /** A venue picked in the desktop's live race before review: the review starts from it. */
   const [preferred, setPreferred] = React.useState<string | null>(null);
+  /** The token page's token is on its side of the ticket (a quick buy waits for it before it quotes). */
+  const [resolved, setResolved] = React.useState(!prefill.buy && !prefill.sell);
 
   // A token page's Buy or Sell: the token on its side, dollars on the other.
   React.useEffect(() => {
@@ -167,6 +172,7 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
           setTokenIn(token.token);
           setTokenOut(other);
         }
+        setResolved(true);
       })
       .catch(() => undefined);
     return () => {
@@ -179,7 +185,8 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
   const setIntent = controller.set;
   // Rehearsed on Arc before the slide (as in chat): a revert stops it here, in the chain's own words.
   const rehearsable = Boolean(intent && isSwapOpen(intent) && !intent.blocking && intent.draft && intent.state === "ready_for_approval");
-  const rehearsal = useRehearsal("swaps", intent ?? { id: "", version: 0 }, rehearsable);
+  const onRehearsalChanged = useSwapRehearsalChanged(controller.refresh);
+  const rehearsal = useRehearsal("swaps", intent ?? { id: "", version: 0 }, rehearsable, onRehearsalChanged);
   React.useEffect(() => {
     if (!journal.resumable || intent) return;
     let live = true;
@@ -187,6 +194,11 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
       .get(journal.resumable)
       .then(({ intent: found }) => {
         if (!live) return;
+        // One that already ended is not reopened: the ticket starts fresh (the recovery note tells its outcome).
+        if (!isSwapOpen(found) && !isSwapMoving(found)) {
+          journal.forget(found.id);
+          return;
+        }
         setIntent(found);
         setStep("review");
       })
@@ -195,6 +207,8 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
       live = false;
     };
   }, [journal, intent, setIntent]);
+
+  const stopped = rehearsable && rehearsal.result?.status === "reverted";
 
   const blocking = intent?.blocking ?? null;
   const tx = intentTx(intent, signingSince, blocking ? policyText(blocking, intent!.network) : null);
@@ -251,6 +265,15 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
       setCreating(false);
     }
   };
+
+  // A quick buy (an amount on the token page's link): quote it at once, no keypad.
+  const quick = React.useRef(Boolean(prefill.buy && prefill.amount));
+  React.useEffect(() => {
+    if (!quick.current || !resolved || status !== "account" || intent || amount === ZERO) return;
+    quick.current = false;
+    // `review` reads the ticket as it is now; it runs once, when the token is on it.
+    void review(null);
+  }, [resolved, status, intent, amount]);
 
   const confirm = async () => {
     if (!intent?.draft) return;
@@ -370,16 +393,32 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
   const code = blocking?.code ?? null;
   const blocker: Blocker | undefined = blocking ? { label: policyText(blocking, intent!.network), fix: code ? fixOf(code) : null } : undefined;
   const slideLabel = prefill.buy ? t("ticket.slideBuy") : prefill.sell ? t("ticket.slideSell") : t("ticket.slide");
+  const receipt = intent ? (
+    <SwapReceipt
+      intent={intent}
+      actions={
+        <>
+          <Button label={t("send.done")} onPress={leave} />
+          {!embedded ? <Button label={t("ticket.viewToken", { symbol: tokenOut.symbol })} variant="ghost" onPress={() => router.replace(`/token/${tokenOut.chainId}/${tokenOut.address}`)} /> : null}
+        </>
+      }
+    />
+  ) : null;
   const reviewStep = intent ? (
     <View style={styles.grow}>
-      <ScrollView style={styles.grow} contentContainerStyle={styles.scroll}>
-        {finished ? null : (
+      <ScrollView style={styles.grow} contentContainerStyle={[styles.scroll, finished ? styles.receiptBody : null]}>
+        {finished ? (
+          // The trade landed: what arrived is the page, with Done and the token (never a blank ticket under the header).
+          <TxArrive>{receipt}</TxArrive>
+        ) : (
           <Animated.View exiting={reduced ? undefined : FadeOut.duration(TIMING.selection)} style={styles.stack}>
             <SwapReview
               intent={intent}
               onRefresh={() => void controller.revise({})}
               refreshing={controller.busy && !inFlight}
-              paused={inFlight}
+              // A swap that is no longer open is never re-quoted (an ended one answered "intent_final" behind a
+              // "The price moved" toast, 10-25).
+              paused={inFlight || !open}
               hideRoutes={wide}
               {...(open ? { onPick: (venue: string) => void controller.revise({ venue }) } : {})}
             />
@@ -388,49 +427,43 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
           </Animated.View>
         )}
       </ScrollView>
-      <View style={styles.footer}>
-        <TicketCta
-          tx={tx}
-          action={intent.draft ? prompt(intent.draft, intent.network) : t("swap.title")}
-          slideLabel={slideLabel}
-          resetKey={`${intent.id}:${intent.version}`}
-          onConfirm={() => void confirm()}
-          blocker={blocker ?? (rehearsal.result?.status === "reverted" ? { label: t("feed.run.rehearsedStopped"), fix: null } : undefined)}
-          onFix={onFix}
-          busy={(controller.busy && !inFlight) || (rehearsable && !rehearsalAllows(rehearsal.result) && rehearsal.result?.status !== "reverted")}
-          explorerUrl={intent.tx?.explorerUrl ?? null}
-          onRetry={() => {
-            controller.reset();
-            void review(intent.draft?.venue ?? null);
-          }}
-          receipt={
-            <SwapReceipt
-              intent={intent}
-              actions={
-                <>
-                  <Button label={t("send.done")} onPress={leave} />
-                  {!embedded ? <Button label={t("ticket.viewToken", { symbol: tokenOut.symbol })} variant="ghost" onPress={() => router.replace(`/token/${tokenOut.chainId}/${tokenOut.address}`)} /> : null}
-                </>
-              }
-            />
-          }
-        />
-        {open ? (
-          <View style={styles.row}>
-            {code && EDIT_CODES.has(code) ? <Button label={t("swap.changeAmount")} variant="ghost" size="sm" onPress={() => setStep("amount")} /> : null}
-            <Button
-              label={t("swap.cancel")}
-              variant="ghost"
-              size="sm"
-              disabled={controller.busy}
-              onPress={() => {
-                void controller.cancel();
-                leave();
-              }}
-            />
-          </View>
-        ) : null}
-      </View>
+      {finished ? null : (
+        <View style={styles.footer}>
+          <TicketCta
+            tx={tx}
+            action={intent.draft ? prompt(intent.draft, intent.network) : t("swap.title")}
+            slideLabel={slideLabel}
+            resetKey={`${intent.id}:${intent.version}`}
+            onConfirm={() => void confirm()}
+            // A rehearsal that reverted holds the slide (TicketCta): nothing is signed that the chain already refused.
+          blocker={blocker ?? (stopped ? { label: t("feed.run.rehearsedStopped"), fix: { kind: "retry" } } : undefined)}
+            onFix={onFix}
+            busy={(controller.busy && !inFlight) || (rehearsable && !rehearsalAllows(rehearsal.result) && !stopped)}
+            explorerUrl={intent.tx?.explorerUrl ?? null}
+            onRetry={() => {
+              controller.reset();
+              // A route that reverted is benched by the api: try again on whatever is best now, never the same pick.
+              void review(intent.outcome === "reverted" ? null : (intent.draft?.venue ?? null));
+            }}
+            receipt={receipt}
+          />
+          {open ? (
+            <View style={styles.row}>
+              {code && EDIT_CODES.has(code) ? <Button label={t("swap.changeAmount")} variant="ghost" size="sm" onPress={() => setStep("amount")} /> : null}
+              <Button
+                label={t("swap.cancel")}
+                variant="ghost"
+                size="sm"
+                disabled={controller.busy}
+                onPress={() => {
+                  void controller.cancel();
+                  leave();
+                }}
+              />
+            </View>
+          ) : null}
+        </View>
+      )}
     </View>
   ) : null;
 
@@ -506,6 +539,7 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   grow: { flex: 1 },
   scroll: { gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingTop: SPACE.sm, paddingBottom: SPACE.lg },
+  receiptBody: { flexGrow: 1, justifyContent: "center", paddingBottom: SPACE.xl },
   stack: { gap: SPACE.md },
   switch: { paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
   pair: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },

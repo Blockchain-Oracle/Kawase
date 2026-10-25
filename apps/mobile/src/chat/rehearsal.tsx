@@ -49,10 +49,20 @@ export type RehearsalControl = {
   run: () => void;
 };
 
-/** Simulates each ready version once by itself (a new quote is a new version, simulated again); `run` repeats it. */
-export function useRehearsal(kind: RehearsalKind, intent: { id: string; version: number }, ready: boolean): RehearsalControl {
+/** A simulation the api answered with a newer version (a swap whose route reverted is redrafted on the next best). */
+export type RehearsalChanged = Extract<RehearsalView, { status: "changed" }>;
+
+/**
+ * Simulates each ready version once by itself (a new quote is a new version, simulated again); `run` repeats it.
+ * `onChanged`: the api replaced the version while simulating it; the host reads the new one (it is simulated in turn).
+ */
+export function useRehearsal(kind: RehearsalKind, intent: { id: string; version: number }, ready: boolean, onChanged?: (result: RehearsalChanged) => void): RehearsalControl {
   const [state, setState] = React.useState<{ key: string; value: Rehearsal } | null>(null);
   const [round, setRound] = React.useState(0);
+  const changed = React.useRef(onChanged);
+  React.useEffect(() => {
+    changed.current = onChanged;
+  }, [onChanged]);
   const key = `${intent.id}:${intent.version}`;
   React.useEffect(() => {
     if (!ready) return undefined;
@@ -61,7 +71,11 @@ export function useRehearsal(kind: RehearsalKind, intent: { id: string; version:
     // A version that is replaced at once (a leverage being dragged, a quote refreshed) is not simulated.
     const timer = setTimeout(() => {
       SIMULATORS[kind](intent.id, intent.version)
-        .then(({ simulation }) => live && setState({ key, value: simulation }))
+        .then(({ simulation }) => {
+          if (!live) return;
+          setState({ key, value: simulation });
+          if (simulation.status === "changed") changed.current?.(simulation);
+        })
         .catch(() => live && setState({ key, value: { status: "error" } }));
     }, SETTLE_MS);
     return () => {
@@ -85,8 +99,12 @@ export function rehearsalBlocker(control: RehearsalControl, labels: { running: s
   return null;
 }
 
-/** Whether the person (or the budget) may go ahead: once it has run, anything but a revert. */
-export const rehearsalAllows = (rehearsal: Rehearsal | null) => rehearsal !== null && rehearsal.status !== "running" && rehearsal.status !== "reverted";
+/**
+ * Whether the person (or the budget) may go ahead: once it has run, anything but a revert, or a route the api benched
+ * for reverting (its next best is on its way as a new version).
+ */
+export const rehearsalAllows = (rehearsal: Rehearsal | null) =>
+  rehearsal !== null && rehearsal.status !== "running" && rehearsal.status !== "reverted" && !(rehearsal.status === "changed" && rehearsal.reason === "route_failed");
 
 /** The simulation panel: its state on the left, Simulate again on the right, and what the chain said under them. */
 export function RehearsalBlock({ control, network }: { control: RehearsalControl; network: Network }) {

@@ -41,6 +41,7 @@ export const swap: Catalog["swap"] = {
   signPrompt: "Trocar {{paid}} por pelo menos {{min}}",
   cancel: "Cancelar troca",
   changed: "O preço mudou. Confira os novos valores.",
+  routeFailed: "A rota da {{venue}} está falhando na Arc agora, então a Kawase trocou para a próxima melhor.",
   quoteUnavailable: "Sem preço agora. Tente de novo em instantes.",
   testnetPools: "As reservas da rede de teste são pequenas, então os preços aqui podem ficar longe do mercado.",
   changeAmount: "Mudar valor",
