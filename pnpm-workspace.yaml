@@ -12,7 +12,7 @@ catalog:
   turbo: 2.11.5
   typescript: 6.0.3 # matches Expo SDK 57's template (spike 14)
   typescript-eslint: 8.71.0
-  zod: 4.6.5
+  zod: 4.6.6
   viem: 2.57.0
   # DBOS SDK and drizzle-datasource must match (spike 06)
   "@dbos-inc/dbos-sdk": 5.2.11
